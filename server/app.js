@@ -4,6 +4,8 @@ import connectDB from './database/mongodb.js';
 
 const app = express();
 
+
+
 app.listen(PORT, () => {
     console.log(`Server is running on port http://localhost:${PORT}`);
     connectDB();
