@@ -1,20 +1,19 @@
 import express from 'express';
+import { authorize } from '../middlewares/auth.middleware.js';
+import { createReport, getAllReports, getReportById, getReportsByUserId } from '../controllers/report.controllers.js';
+import { upload } from '../middlewares/multer.middleware.js';
 
 const reportRouter = express.Router();
 
-reportRouter.get('/', (req, res, next) => { 
-    res.send("Get all reports route called");
-});
+reportRouter.post('/', authorize, upload.single('reportImage'), createReport);
 
-reportRouter.get('/:id', (req, res, next) => { 
-    res.send(`Get report with id route called`);
-} );
+reportRouter.get('/', authorize, getAllReports);
 
-reportRouter.get('/user/:id', (req, res, next) => { 
-    res.send(`Get reports for user with id route called`);
-});
+reportRouter.get('/get/:id', authorize, getReportById);
 
-reportRouter.delete('/delete/:id', (req, res, next) => { 
+reportRouter.get('/user', authorize, getReportsByUserId);
+
+reportRouter.delete('/delete/:id', authorize, (req, res, next) => { 
     res.send(`Delete report with id route called`);
 });
 

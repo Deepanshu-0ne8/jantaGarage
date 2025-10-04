@@ -8,7 +8,7 @@ export const signUp = async (req, res, next) => {
     const session = await mongoose.startSession();
 
     try {
-        const { name, email, password, role, contact, address } = req.body;
+        const { userName, email, password, role, contact, address } = req.body;
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -23,7 +23,7 @@ export const signUp = async (req, res, next) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const user = new User({
-            name,
+            userName,
             email,
             role,
             contact,

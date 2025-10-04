@@ -4,6 +4,7 @@ import connectDB from './database/mongodb.js';
 import authRouter from './routes/auth.routes.js';
 import reportRouter from './routes/report.routes.js';
 import cookieParser from 'cookie-parser';
+import userRouter from './routes/user.routes.js';
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/v1/auth', authRouter)
+app.use('/api/v1/user', userRouter);
 app.use('/api/v1/reports', reportRouter);
 
 app.listen(PORT, () => {
