@@ -1,12 +1,19 @@
 import mongoose from "mongoose";
+import { DEFAULT_DP } from "../config/env.js";
 
 const userSchema = new mongoose.Schema({
-  name: { 
-    type: String,
-    required: [true, "user name is required"],
-    trim: true,
-    minlength: [2, "user name must be at least 3 characters"],
-    maxlength: [100, "user name must be at most 100 characters"]
+  name: {
+      type: String,
+      trim: true,
+      minlength: [2, "user name must be at least 3 characters"],
+      maxlength: [100, "user name must be at most 100 characters"]
+    },
+    userName: {
+      type: String,
+      required: [true, "username is required"],
+      trim: true,
+      minlength: [2, "user name must be at least 3 characters"],
+      maxlength: [100, "user name must be at most 100 characters"]
     },
     email: {
     type: String,
@@ -33,6 +40,12 @@ const userSchema = new mongoose.Schema({
         unique: true,
         trim: true,
         match: [/^\d{10}$/, 'please fill a valid 10 digit contact number']
+    },
+    displaypic: {
+      url: {
+        type: String,
+        default: DEFAULT_DP
+      }
     },
     address: {
         type: String,
