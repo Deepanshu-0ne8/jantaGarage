@@ -1,4 +1,5 @@
 import { DEFAULT_DP } from "../config/env.js";
+import { departmentList } from "../models/user.model.js";
 import { extractPublicId, uploadDpOnCloudinary } from "../utils/cloudinary.js";
 import { v2 as cloudinary } from "cloudinary";
 
@@ -21,16 +22,31 @@ export const getProfile = async (req, res, next) => {
 
 export const updateProfile = async (req, res, next) => {
   try {
-    const { name } = req.body;
-    const file = req.file; // Multer uploads
-    const contact = req.contact;
-    const address = req.address;
+    const { name, contact, address, departments } = req.body;
+    const file = req.file;
 
     let isUpdated = false;
-    let deletionWarning = null; // To track deletion errors
+    let deletionWarning = null;
 
     if (name && name !== req.user.name) {
       req.user.name = name;
+      isUpdated = true;
+    }
+
+    if (contact) {
+      const numCont = Number(contact);
+      if (isNaN(numCont)) {
+        return res.status(400).json({
+          status: "fail",
+          message: "Invalid contact number format.",
+        });
+      }
+      req.user.contact = numCont;
+      isUpdated = true;
+    }
+
+    if (address && address !== req.user.address) {
+      req.user.address = address;
       isUpdated = true;
     }
 
@@ -38,7 +54,6 @@ export const updateProfile = async (req, res, next) => {
       const localImagePath = file.path;
       const oldUrl = req.user.displaypic?.url;
 
-      // Upload new image
       const cloudinaryResponse = await uploadDpOnCloudinary(localImagePath);
 
       if (!cloudinaryResponse || !cloudinaryResponse.url) {
@@ -48,12 +63,10 @@ export const updateProfile = async (req, res, next) => {
         });
       }
 
-      // Assign new image
       req.user.displaypic.url = cloudinaryResponse.url;
       isUpdated = true;
 
-      // Try deleting old image (non-blocking for update)
-      if (oldUrl) {
+      if (oldUrl && oldUrl !== DEFAULT_DP) {
         const publicId = extractPublicId(oldUrl);
         if (publicId) {
           try {
@@ -66,30 +79,55 @@ export const updateProfile = async (req, res, next) => {
       }
     }
 
-    if(contact) {
-        req.user.contact = contact;
-        isUpdated = true;
+    // Departments update with validation
+    if (departments !== undefined) {
+      if (req.user.role === "citizen") {
+        return res.status(403).json({
+          status: "fail",
+          message: "Citizens cannot update departments.",
+        });
+      }
+
+      let newDepartments = departments;
+
+      // Handle string input as single department
+      if (!Array.isArray(newDepartments)) {
+        newDepartments = [newDepartments];
+      }
+
+      // Validate against allowed list
+      const invalid = newDepartments.filter(
+        (dept) => !departmentList.includes(dept)
+      );
+      if (invalid.length > 0) {
+        return res.status(400).json({
+          status: "fail",
+          message: `Invalid department(s): ${invalid.join(", ")}`,
+        });
+      }
+
+      // Merge unique departments
+      const existing = req.user.departments || [];
+      const unique = [...new Set([...existing, ...newDepartments])];
+      req.user.departments = unique;
+      isUpdated = true;
     }
 
-    if(address) {
-        req.user.address = address;
-        isUpdated = true;
-    }
-
+    // Save only if something changed
     if (isUpdated) {
       const updatedUser = await req.user.save();
-
       return res.status(200).json({
         status: "success",
-        message: "Profile updated successfully",
-        warning: deletionWarning, // will be null if no error
+        message: "Profile updated successfully.",
+        warning: deletionWarning,
         data: updatedUser.toObject(),
       });
     }
 
+    // If nothing changed
     return res.status(200).json({
       status: "success",
-      message: "No changes detected or applied.",
+      message: "No changes detected.",
       data: req.user.toObject(),
     });
   } catch (error) {
@@ -97,11 +135,12 @@ export const updateProfile = async (req, res, next) => {
   }
 };
 
+
 export const removeDp = async (req, res, next) => {
    try {
      const oldUrl = req.user.displaypic.url;
     if(oldUrl === DEFAULT_DP) {
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "NO profile pic to delete",
             data: req.user

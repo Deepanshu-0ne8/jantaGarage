@@ -116,3 +116,99 @@ export const getReportsByUserId = async (req, res, next) => {
     }
 }
 
+export const updateReportStatusTOInProgress = async (req, res, next) => {
+  try {
+    // Role-based access control
+    if (req.user.role === 'citizen') {
+      return res.status(403).json({
+        status: "fail",
+        message: "You are not allowed to change the report status.",
+      });
+    }
+
+    const { id } = req.params;
+
+    // Find and update in one step
+    const report = await Report.findByIdAndUpdate(
+      id,
+      { status: 'IN_PROGRESS' },
+      { new: true, runValidators: true }
+    );
+
+    // If no report found
+    if (!report) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Report not found.",
+      });
+    }
+
+    // Success response
+    res.status(200).json({
+      status: "success",
+      message: "Report verified successfully.",
+      data: report,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+export const updateReportStatusTOResolved = async (req, res, next) => {
+  try {
+    // Role-based access control
+    if (req.user.role === 'citizen') {
+      return res.status(403).json({
+        status: "fail",
+        message: "You are not allowed to change the report status.",
+      });
+    }
+
+    const { id } = req.params;
+
+    // Find and update in one step
+    const report = await Report.findByIdAndUpdate(
+      id,
+      { status: "Resolved" },
+      { new: true, runValidators: true }
+    );
+
+    // If no report found
+    if (!report) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Report not found.",
+      });
+    }
+
+    // Success response
+    res.status(200).json({
+      status: "success",
+      message: "Report resolved successfully.",
+      data: report,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// export const deleteReport = async (req, res, next) => {
+//     try {
+//         const { id } = req.params;
+//         const report = await Report.findByIdAndDelete(id);
+//         if (!report) {
+//             return res.status(404).json({
+//                 status: 'fail',
+//                 message: 'Report not found'
+//             });
+//         }
+//         res.status(200).json({
+//             status: 'success',
+//             message: 'Report deleted successfully',
+//         });
+//     } catch (error) {
+//         next(error)
+//     }
+// }
