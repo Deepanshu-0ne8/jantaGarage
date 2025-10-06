@@ -8,6 +8,7 @@ export const createReport = async (req, res, next) => {
 
             const report = await Report.create({
             ...req.body,
+            departments: JSON.parse(req.body.departments),
             location: JSON.parse(req.body.location), // Assuming location comes as a stringified JSON
             createdBy: req.id
         })
@@ -17,7 +18,8 @@ export const createReport = async (req, res, next) => {
                 data: report
             });
         }
-
+        console.log("No image uploaded, creating report without image");
+        
         const localImagePath = req.file.path;
 
         // Upload image to Cloudinary

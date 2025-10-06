@@ -32,7 +32,7 @@ const Signup = () => {
       setLoading(false);
 
       if (res.data.success) {
-        navigate("/verify-otp", { state: { email: formData.email } });
+        navigate("/emailVerify", { state: { email: formData.email } });
       } else {
         alert(res.data.message || "Signup failed");
       }
@@ -105,7 +105,7 @@ const Signup = () => {
           Already have an account? <Link to="/login">Login</Link>
         </p>
         <p className="back-home">
-          <Link to="/">← Back to Home</Link>
+          <Link to="/">← Back to Landing Page</Link>
         </p>
       </div>
     </div>
