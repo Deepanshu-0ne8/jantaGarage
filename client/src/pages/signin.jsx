@@ -18,7 +18,7 @@ const Login = () => {
 
       if (res.data.success) {
         alert("Login successful!");
-        navigate("/"); // redirect to home
+        navigate("/home"); // redirect to home
       } else {
         alert(res.data.message || "Login failed");
       }
@@ -59,7 +59,7 @@ const Login = () => {
           Don't have an account? <Link to="/signup">Sign Up</Link>
         </p>
         <p className="back-home">
-          <Link to="/">← Back to Home</Link>
+          <Link to="/">← Back to Landing Page</Link>
         </p>
       </div>
     </div>

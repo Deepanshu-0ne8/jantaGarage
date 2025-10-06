@@ -99,7 +99,9 @@ export const verifyOTP = async (req, res, next) => {
         user.otpExpiry = undefined;
         await user.save();
 
-        res.json({ message: 'Email verified successfully. You can now log in.' });
+        res.json({
+            success: true,
+            message: 'Email verified successfully. You can now log in.' });
     } catch (error) {
         next(error);
     }
@@ -126,7 +128,9 @@ export const resendOTP = async (req, res, next) => {
             text: `Your new OTP is: ${otp}`
         });
 
-        res.json({ message: 'OTP resent successfully.' });
+        res.json({
+            success: true,
+            message: 'OTP resent successfully.' });
     } catch (error) {
         next(error);
     }
