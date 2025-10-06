@@ -51,6 +51,16 @@ const userSchema = new mongoose.Schema(
       minlength: [6, "password must be at least 6 characters"],
       maxlength: [128, "password must be at most 128 characters"],
     },
+    otp: {
+      type: String,
+    },
+    otpExpiry: {
+      type: Date,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
     role: {
       type: String,
       enum: ["citizen", "staff", "admin"],
