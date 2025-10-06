@@ -57,7 +57,7 @@ const VerifyOTP = () => {
           Mistyped email? <Link to="/signup" state={{ email }}>Go back to Signup</Link>
         </p>
         <p className="back-home">
-          <Link to="/">← Back to Home</Link>
+          <Link to="/">← Back to Landing Page</Link>
         </p>
       </div>
     </div>
