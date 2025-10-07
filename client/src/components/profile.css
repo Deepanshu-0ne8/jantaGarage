@@ -1,0 +1,556 @@
+/* src/components/profile.css (Final Version with Checkbox Modal Styles) */
+
+:root {
+    --primary-color: #3b82f6; /* Blue - Main Brand Color */
+    --accent-color: #10b981; /* Green - Secondary/Success Color */
+    --text-color-dark: #1f2937;
+    --text-color-light: #4b5563;
+    --bg-light: #f9fafb;
+    --card-bg: #ffffff;
+    --border-radius-lg: 16px;
+    --border-radius-md: 8px;
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+
+    /* Role Colors */
+    --role-citizen: #10b981; 
+    --role-staff: #f59e0b; 
+    --role-admin: #ef4444; 
+
+    /* Status Colors */
+    --status-success: #22c55e;
+    --status-error: #f43f5e;
+    --status-info: #3b82f6;
+}
+
+/* --- Global Wrapper --- */
+.profile-page-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+    background-color: var(--bg-light);
+    font-family: 'Inter', sans-serif, Arial;
+    box-sizing: border-box;
+}
+
+/* --- Main Card Container --- */
+.profile-container {
+    width: 100%;
+    max-width: 768px;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 30px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+/* LOADING & ERROR STATES */
+.loading-state, .error-state {
+    text-align: center;
+    padding: 50px;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+/* --- Status Messages --- */
+.status-message {
+    padding: 12px 20px;
+    border-radius: var(--border-radius-md);
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.status-success {
+    background-color: #d1fae5;
+    color: var(--status-success);
+    border: 1px solid var(--status-success);
+}
+
+.status-error {
+    background-color: #fee2e2;
+    color: var(--status-error);
+    border: 1px solid var(--status-error);
+}
+
+.status-info {
+    background-color: #dbeafe;
+    color: var(--status-info);
+    border: 1px solid var(--status-info);
+}
+
+
+/* -------------------------------------------------------------------
+   VIEW MODE STYLES
+   ------------------------------------------------------------------- */
+
+/* --- Header & Avatar Section --- */
+.profile-header {
+    display: flex;
+    align-items: center;
+    padding-bottom: 30px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.avatar-section {
+    position: relative;
+    margin-right: 30px;
+    flex-shrink: 0;
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--primary-color);
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.1);
+}
+
+.remove-dp-btn {
+    position: absolute;
+    bottom: 5px;
+    right: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: var(--role-admin);
+    color: white;
+    border: 2px solid var(--card-bg);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8rem;
+    transition: background-color 0.2s;
+    padding: 0;
+}
+
+.remove-dp-btn:hover {
+    background-color: #b91c1c;
+}
+
+.user-identity h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-color-dark);
+    margin: 0 0 4px 0;
+}
+
+.user-email {
+    font-size: 1rem;
+    color: var(--text-color-light);
+    margin: 0 0 10px 0;
+}
+
+.role-and-status {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-role-badge {
+    padding: 4px 12px;
+    border-radius: var(--border-radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+}
+
+/* Dynamic Role Colors for Badge */
+.role-citizen .user-role-badge { background-color: var(--role-citizen); }
+.role-staff .user-role-badge { background-color: var(--role-staff); color: var(--text-color-dark); }
+.role-admin .user-role-badge { background-color: var(--role-admin); }
+
+.verified-tag {
+    font-size: 0.8rem;
+    color: var(--accent-color);
+    font-weight: 500;
+}
+
+/* --- Detail Cards & Data Grid --- */
+.profile-details-card, .departments-card {
+    background-color: #f9f9f9;
+    padding: 25px;
+    border-radius: var(--border-radius-md);
+    margin-bottom: 20px;
+    border-left: 5px solid var(--primary-color);
+}
+.departments-card {
+    border-left: 5px solid var(--accent-color);
+}
+
+.profile-details-card h2, .departments-card h2 {
+    font-size: 1.25rem;
+    color: var(--text-color-dark);
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+}
+
+.data-item {
+    padding: 10px 0;
+    border-bottom: 1px dashed #e5e7eb;
+}
+
+.data-item:last-child {
+    border-bottom: none;
+}
+
+.data-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-color-light);
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.data-value {
+    display: block;
+    font-size: 1rem;
+    color: var(--text-color-dark);
+    font-weight: 400;
+    word-break: break-word;
+}
+
+/* --- Departments Tags (View Mode) --- */
+.department-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.department-tag {
+    background-color: var(--accent-color);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.info-text {
+    font-style: italic;
+    color: var(--text-color-light);
+    margin: 5px 0 0 0;
+    font-size: 0.9rem;
+}
+
+
+/* -------------------------------------------------------------------
+   EDIT MODE STYLES
+   ------------------------------------------------------------------- */
+
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.edit-form input[type="text"] {
+    padding: 10px 15px;
+    border: 1px solid #d1d5db;
+    border-radius: var(--border-radius-md);
+    font-size: 1rem;
+    color: var(--text-color-dark);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background-color: white;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.edit-form input[type="text"]:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    outline: none;
+}
+
+.disabled-input {
+    background-color: #f3f4f6 !important;
+    color: var(--text-color-light) !important;
+    cursor: not-allowed;
+}
+
+/* Avatar Edit Group */
+.avatar-edit-group {
+    align-items: center;
+    margin-bottom: 20px;
+    width: fit-content; 
+    margin: 0 auto 30px auto; 
+}
+
+.dp-upload-area {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    margin-top: 10px;
+    box-shadow: var(--shadow-md);
+    border: 4px solid var(--primary-color);
+}
+
+.edit-avatar-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: filter 0.3s;
+}
+
+.upload-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+    text-align: center;
+    padding: 10px;
+    font-weight: 600;
+}
+
+.dp-upload-area:hover .upload-overlay {
+    opacity: 1;
+}
+
+.file-name {
+    margin: 5px 0 0 0;
+    font-size: 0.85rem;
+    color: var(--accent-color);
+}
+
+/* --- Actions Section --- */
+.profile-actions {
+    display: flex;
+    gap: 20px;
+    padding-top: 10px;
+}
+
+.form-actions {
+    margin-top: 20px;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 20px;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    border-radius: var(--border-radius-md);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    box-sizing: border-box;
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.primary-btn:hover {
+    background-color: #2563eb;
+    transform: translateY(-1px);
+}
+
+.secondary-btn {
+    background-color: #e5e7eb;
+    color: var(--text-color-dark);
+}
+
+.secondary-btn:hover {
+    background-color: #d1d5db;
+    transform: translateY(-1px);
+}
+
+.action-btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.select-dept-btn {
+    /* Style for the button inside EditForm to launch the modal */
+    width: 100%; 
+    padding: 10px 15px;
+    background-color: #d1d5db; /* Light gray */
+    color: var(--text-color-dark);
+    font-weight: 500;
+    border: none;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    margin-top: 5px;
+    transition: background-color 0.2s;
+}
+
+.select-dept-btn:hover {
+    background-color: #bbc0c7;
+}
+
+/* -------------------------------------------------------------------
+   MODAL STYLES (NEW)
+   ------------------------------------------------------------------- */
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75); /* Darker backdrop */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.department-modal {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius-lg);
+    padding: 30px;
+    width: 90%;
+    max-width: 700px; /* Slightly wider modal */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    max-height: 85vh; /* Increase max height for more options */
+    overflow-y: auto;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.department-modal h3 {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #f3f4f6;
+    padding-bottom: 10px;
+    font-size: 1.5rem;
+}
+
+.checkbox-grid {
+    display: grid;
+    /* Two columns on desktop, allowing items to wrap */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+    gap: 15px 25px; /* Vertical and horizontal gap */
+    padding-right: 15px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: flex-start; /* Align checkbox and text at the top */
+    gap: 10px;
+    padding: 8px 0;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--text-color-dark);
+    border-bottom: 1px dotted #e5e7eb;
+}
+
+.checkbox-item:last-child {
+    border-bottom: none;
+}
+
+.checkbox-item input[type="checkbox"] {
+    /* Custom size and alignment for checkbox */
+    min-width: 18px;
+    min-height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+    margin-top: 2px; /* Slight offset for better vertical alignment */
+}
+
+.checkbox-item label {
+    cursor: pointer;
+    line-height: 1.4;
+    user-select: none; /* Prevent text selection when clicking */
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 15px;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Optional: Fade-in animation for modal */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+    .department-modal {
+        max-width: 95%;
+        margin: 20px;
+    }
+    .checkbox-grid {
+        /* Single column on smaller screens */
+        grid-template-columns: 1fr;
+        padding-right: 0;
+    }
+    .modal-actions {
+        flex-direction: column-reverse; /* Put 'Cancel' below 'Apply' */
+    }
+    .modal-actions .action-btn {
+        width: 100%;
+        margin-top: 10px;
+    }
+}
+@media (max-width: 600px) {
+    .profile-container {
+        padding: 20px;
+    }
+    .profile-header {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: center;
+    }
+    .avatar-section {
+        margin: 0 auto 20px auto;
+        width: 120px; 
+    }
+    .remove-dp-btn {
+        right: -5px; 
+    }
+    .user-identity {
+        width: 100%;
+        text-align: center;
+    }
+    .role-and-status {
+        justify-content: center;
+    }
+    .user-identity h1 {
+        font-size: 1.5rem;
+    }
+    .profile-actions, .form-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

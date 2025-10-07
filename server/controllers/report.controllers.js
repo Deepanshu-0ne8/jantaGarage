@@ -18,7 +18,6 @@ export const createReport = async (req, res, next) => {
                 data: report
             });
         }
-        console.log("No image uploaded, creating report without image");
         
         const localImagePath = req.file.path;
 
@@ -36,6 +35,7 @@ export const createReport = async (req, res, next) => {
         // Create the report with data from req.body and the Cloudinary image URL
         const report = await Report.create({
             ...req.body,
+            departments: JSON.parse(req.body.departments),
             location: JSON.parse(req.body.location), // Assuming location comes as a stringified JSON
             image: {
                 url: cloudinaryResponse.url // Store the URL returned by Cloudinary
@@ -110,7 +110,7 @@ export const getReportsByUserId = async (req, res, next) => {
             });
         }
         res.status(200).json({
-            status: 'success',
+            success: true,
             data: reports
         });
     } catch (error) {
@@ -140,14 +140,14 @@ export const updateReportStatusTOInProgress = async (req, res, next) => {
     // If no report found
     if (!report) {
       return res.status(404).json({
-        status: "fail",
+        success: false,
         message: "Report not found.",
       });
     }
 
     // Success response
     res.status(200).json({
-      status: "success",
+      success: true,
       message: "Report verified successfully.",
       data: report,
     });
@@ -162,7 +162,7 @@ export const updateReportStatusTOResolved = async (req, res, next) => {
     // Role-based access control
     if (req.user.role === 'citizen') {
       return res.status(403).json({
-        status: "fail",
+        success: false,
         message: "You are not allowed to change the report status.",
       });
     }
@@ -179,14 +179,14 @@ export const updateReportStatusTOResolved = async (req, res, next) => {
     // If no report found
     if (!report) {
       return res.status(404).json({
-        status: "fail",
+        success: false,
         message: "Report not found.",
       });
     }
 
     // Success response
     res.status(200).json({
-      status: "success",
+      success: true,
       message: "Report resolved successfully.",
       data: report,
     });

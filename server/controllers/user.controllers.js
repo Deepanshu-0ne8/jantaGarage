@@ -1,4 +1,5 @@
 import { DEFAULT_DP } from "../config/env.js";
+import Report from "../models/report.model.js";
 import { departmentList } from "../models/user.model.js";
 import { extractPublicId, uploadDpOnCloudinary } from "../utils/cloudinary.js";
 import { v2 as cloudinary } from "cloudinary";
@@ -37,7 +38,7 @@ export const updateProfile = async (req, res, next) => {
       const numCont = Number(contact);
       if (isNaN(numCont)) {
         return res.status(400).json({
-          status: "fail",
+          success: false,
           message: "Invalid contact number format.",
         });
       }
@@ -58,6 +59,7 @@ export const updateProfile = async (req, res, next) => {
 
       if (!cloudinaryResponse || !cloudinaryResponse.url) {
         return res.status(500).json({
+          success: false,
           status: "error",
           message: "Failed to upload image to Cloudinary. Please try again.",
         });
@@ -83,7 +85,7 @@ export const updateProfile = async (req, res, next) => {
     if (departments !== undefined) {
       if (req.user.role === "citizen") {
         return res.status(403).json({
-          status: "fail",
+          success: false,
           message: "Citizens cannot update departments.",
         });
       }
@@ -101,15 +103,15 @@ export const updateProfile = async (req, res, next) => {
       );
       if (invalid.length > 0) {
         return res.status(400).json({
-          status: "fail",
+          success: false,
           message: `Invalid department(s): ${invalid.join(", ")}`,
         });
       }
 
-      // Merge unique departments
-      const existing = req.user.departments || [];
-      const unique = [...new Set([...existing, ...newDepartments])];
-      req.user.departments = unique;
+      // // Merge unique departments
+      // const existing = req.user.departments || [];
+      // const unique = [...new Set([...existing, ...newDepartments])];
+      req.user.departments = newDepartments;
       isUpdated = true;
     }
 
@@ -117,7 +119,7 @@ export const updateProfile = async (req, res, next) => {
     if (isUpdated) {
       const updatedUser = await req.user.save();
       return res.status(200).json({
-        status: "success",
+       success: true,
         message: "Profile updated successfully.",
         warning: deletionWarning,
         data: updatedUser.toObject(),
@@ -126,7 +128,7 @@ export const updateProfile = async (req, res, next) => {
 
     // If nothing changed
     return res.status(200).json({
-      status: "success",
+      success: true,
       message: "No changes detected.",
       data: req.user.toObject(),
     });
@@ -166,7 +168,7 @@ export const removeDp = async (req, res, next) => {
 
       const updatedUser = await req.user.save();
       return res.status(200).json({
-        status: "success",
+        success: true,
         message: "Profile updated successfully",
         data: updatedUser.toObject(),
       });
@@ -174,3 +176,30 @@ export const removeDp = async (req, res, next) => {
     next(error);
    }
 }
+
+export const getPepartmentalReport = async (req, res, next) => {
+    try {
+        if (req.user.role === 'citizen') {
+            return res.status(403).json({
+                status: 'fail',
+                message: 'You are not authorized to view departmental reports'
+            });
+        }
+
+        const reports = await Report.find({ departments: { $in: req.user.departments } });
+
+        if (reports.length === 0) {
+            return res.status(404).json({
+                success: false,
+                status: 'fail',
+                message: 'No reports found for this user'
+            });
+        }
+        res.status(200).json({
+            success: true,
+            data: reports
+        });
+    } catch (error) {
+        next(error)
+    }
+} 
