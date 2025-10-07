@@ -139,8 +139,8 @@ const Navbar = () => {
         <Link to="/home" className={`nav-link ${location.pathname === "/home" ? "active" : ""}`}>
           Home
         </Link>
-        <Link to="/reports" className={`nav-link ${location.pathname === "/reports" ? "active" : ""}`}>
-          Reports
+        <Link to="/notifications" className={`nav-link ${location.pathname === "/notifications" ? "active" : ""}`}>
+          Notifications
         </Link>
         
         {user ? (

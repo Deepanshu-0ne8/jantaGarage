@@ -12,9 +12,9 @@ cloudinary.config({
 });
 
 /**
- * Uploads a local file to Cloudinary.
- * @param {string} localFilePath - The local path of the file to upload.
- * @returns {Promise<object | null>} - The Cloudinary response object or null on failure.
+ 
+ * @param {string} localFilePath 
+ * @returns {Promise<object | null>}
  */
 export const uploadrepOnCloudinary = async (localFilePath) => {
     try {
