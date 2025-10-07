@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../components/navbar";
 import ReportPopup from "../components/reportPopup";
+import PastReports from "../components/pastReports";
 import "./home.css";
 import Modal from "react-modal";
 import api from "../api/axios";
 
 const Home = () => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const [reports, setReports] = useState([]);
+  const [reports, setReports] = useState([]);          // Active reports
+  const [pastReports, setPastReports] = useState([]);  // Closed reports
   const [selectedReport, setSelectedReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -16,11 +18,27 @@ const Home = () => {
   const openPopup = () => setIsPopupOpen(true);
   const closePopup = () => setIsPopupOpen(false);
 
+  // Fetch all reports of user
   const fetchUserReports = async () => {
     try {
       setLoading(true);
       const res = await api.get("/reports/user", { withCredentials: true });
-      setReports(res.data.data || []);
+      const allReports = res.data.data || [];
+
+      // Separate reports
+      const closed = allReports.filter((r) => r.status === "CLOSED");
+      const active = allReports.filter((r) => r.status !== "CLOSED");
+
+      // Sort both by latest update
+      const sortedClosed = closed.sort(
+        (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+      );
+      const sortedActive = active.sort(
+        (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+      );
+
+      setReports(sortedActive);
+      setPastReports(sortedClosed);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || "Failed to fetch reports");
@@ -64,6 +82,7 @@ const Home = () => {
           + Create Report
         </button>
 
+        {/* Your Reports Section */}
         <div className="reports-section">
           <h2>Your Reports</h2>
 
@@ -72,7 +91,7 @@ const Home = () => {
           ) : error ? (
             <p className="error-text">{error}</p>
           ) : reports.length === 0 ? (
-            <p>No reports found. Create one!</p>
+            <p>No active reports found. Create one!</p>
           ) : (
             <div className="table-container">
               <table className="reports-table">
@@ -133,6 +152,12 @@ const Home = () => {
             </div>
           )}
         </div>
+
+        {/* Past Reports Section */}
+        <section className="reports-section">
+          <h2>Past Reports</h2>
+          <PastReports reports={pastReports} />
+        </section>
       </div>
 
       <ReportPopup
@@ -152,9 +177,15 @@ const Home = () => {
         ) : selectedReport ? (
           <div className="report-popup">
             <h2>{selectedReport.title}</h2>
-            <p><strong>Description:</strong> {selectedReport.description}</p>
-            <p><strong>Severity:</strong> {selectedReport.severity}</p>
-            <p><strong>Status:</strong> {selectedReport.status}</p>
+            <p>
+              <strong>Description:</strong> {selectedReport.description}
+            </p>
+            <p>
+              <strong>Severity:</strong> {selectedReport.severity}
+            </p>
+            <p>
+              <strong>Status:</strong> {selectedReport.status}
+            </p>
             {selectedReport.image?.url && (
               <img
                 src={selectedReport.image.url}
