@@ -4,7 +4,6 @@ import { getReportsForVerification } from '../services/reportService';
 import './departmentalReport.css'; // Reusing the visual styles
 import Navbar from './navbar'; 
 
-// --- Attachment Modal Component (Reused) ---
 const AttachmentModal = ({ imageUrl, onClose }) => {
     return (
         <div className="modal-backdrop" onClick={onClose}>
@@ -25,7 +24,6 @@ const AttachmentModal = ({ imageUrl, onClose }) => {
 };
 
 
-// Component to display a single report item awaiting verification
 const VerificationReportItem = ({ report, onResolutionAction }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,18 +43,16 @@ const VerificationReportItem = ({ report, onResolutionAction }) => {
 
     const reportDate = new Date(report.createdAt).toLocaleDateString();
     
-    // Status is always IN_PROGRESS for this list, but we keep the class derivation
     const statusClass = reportDetails.status ? 
         reportDetails.status.toLowerCase().replace(/_/g, '-') : 
         '';
 
     const attachmentCount = reportDetails.imageUrl ? 1 : 0;
     
-    // Handlers for verification actions (These are placeholders until the actual API routes are provided)
     const handleAccept = (e) => {
         e.stopPropagation();
         if (window.confirm("Confirm resolution? This will close the report.")) {
-            // Placeholder API call: You need an endpoint like PUT /reports/accept/:id
+
             onResolutionAction('success', reportDetails.id, 'accepted', `Report #${reportDetails.id.substring(0, 8)} successfully verified and closed.`);
         }
     };
@@ -64,7 +60,7 @@ const VerificationReportItem = ({ report, onResolutionAction }) => {
     const handleReject = (e) => {
         e.stopPropagation();
         if (window.confirm("Reject resolution? This will re-open the report.")) {
-            // Placeholder API call: You need an endpoint like PUT /reports/reject/:id
+
             onResolutionAction('info', reportDetails.id, 'rejected', `Report #${reportDetails.id.substring(0, 8)} rejected. Status reverted to OPEN.`);
         }
     };
@@ -161,10 +157,6 @@ const ReportVerificationPage = () => {
     const [error, setError] = useState(null);
     const [statusMessage, setStatusMessage] = useState({ type: '', message: '' }); 
     
-    // FIX: Removed the restrictive role check (isAuthorized = user?.role === 'citizen';)
-    // All authenticated users can access this page per the backend logic.
-
-    // Function to fetch reports for verification
     const fetchReports = useCallback(async () => {
         setLoading(true);
         setError(null); 
@@ -180,16 +172,15 @@ const ReportVerificationPage = () => {
         }
     }, []); 
 
-    // Effect to initially load data
+
     useEffect(() => {
-        // Only run if user data is loaded and exists
+        
         if (!authLoading && user) { 
             fetchReports();
         }
     }, [user, authLoading, fetchReports]);
 
 
-    // Effect for status message timeout
     useEffect(() => {
         if (statusMessage.message) {
             const timer = setTimeout(() => setStatusMessage({ type: '', message: '' }), 4000);
@@ -198,15 +189,11 @@ const ReportVerificationPage = () => {
     }, [statusMessage]);
 
 
-    // Handler passed to ReportItem to remove report on action and show message
     const handleResolutionAction = useCallback((type, reportId, action, message) => {
         setStatusMessage({ type, message });
         
-        // Optimistically remove the report from the list
         setReports(prevReports => prevReports.filter(r => r._id !== reportId));
         
-        // In a live app, you would typically call fetchReports() after a short delay
-        // to get the definitive current list from the server.
     }, []);
 
 

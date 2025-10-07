@@ -1,4 +1,4 @@
-// src/components/Navbar.jsx (Final Component - Removed Points & Settings)
+
 
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -64,7 +64,6 @@ const Navbar = () => {
   };
 
 
-  // --- User Panel Component (Floating Modal - Updated Grid) ---
   const UserPanel = () => (
     <div ref={panelRef} className="user-panel">
         

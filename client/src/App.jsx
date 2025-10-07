@@ -32,7 +32,7 @@ const appRouter = createBrowserRouter([
   },
   {
     element: <ProtectedRoute />,
-    // 3. Nest all the routes you want to protect inside its `children` array.
+    
     children: [
       {
         path: "/home",

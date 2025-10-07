@@ -1,0 +1,28 @@
+.past-reports-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.report-card {
+  background: #f7f8fa;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease-in-out;
+}
+
+.report-card:hover {
+  transform: scale(1.02);
+}
+
+.report-card h3 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.no-past-reports {
+  color: #777;
+  font-style: italic;
+}
