@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Modal from "react-modal";
-import axios from "axios";
 import "./reportPopup.css";
+import api from "../api/axios";
 
 Modal.setAppElement("#root");
 
@@ -28,15 +28,15 @@ const departmentsList = [
 
 const severityLevels = ["Low", "Medium", "High"];
 
-const ReportPopup = ({ isOpen, onRequestClose }) => {
+const ReportPopup = ({ isOpen, onRequestClose, onReportCreated }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [severity, setSeverity] = useState("Low");
   const [departments, setDepartments] = useState([]);
-  const [image, setImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
   const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(false);
-
   const [isDeptPopupOpen, setIsDeptPopupOpen] = useState(false);
 
   const toggleDepartment = (dep) => {
@@ -45,8 +45,21 @@ const ReportPopup = ({ isOpen, onRequestClose }) => {
     );
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith("image/")) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    } else {
+      setImageFile(null);
+      setImagePreview("");
+    }
+  };
+
   const handleGetLocation = () => {
-    if (!navigator.geolocation) return alert("Geolocation not supported");
+    if (!navigator.geolocation) {
+      return alert("Geolocation not supported");
+    }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
@@ -56,7 +69,7 @@ const ReportPopup = ({ isOpen, onRequestClose }) => {
         });
         alert("Location captured!");
       },
-      (err) => alert("Failed to fetch location")
+      () => alert("Failed to fetch location")
     );
   };
 
@@ -77,26 +90,22 @@ const ReportPopup = ({ isOpen, onRequestClose }) => {
       formData.append("severity", severity);
       formData.append("departments", JSON.stringify(departments));
       formData.append("location", JSON.stringify(location));
-      if (image) formData.append("reportImage", image); // ✅ must match multer field name
+      if (imageFile) formData.append("reportImage", imageFile);
 
-      const res = await axios.post(
-        "http://localhost:6785/api/v1/reports",
-        formData,
-        { 
-          headers: { "Content-Type": "multipart/form-data" },
-          withCredentials: true 
-        }
-      );
+      const res = await api.post("/reports", formData, {
+        withCredentials: true,
+      });
 
-      alert("Report submitted successfully!");
-      console.log(res.data);
+      alert("✅ Report submitted successfully!");
+      onReportCreated?.(res.data.data); // Notify parent
 
       // Reset form
       setTitle("");
       setDescription("");
       setSeverity("Low");
       setDepartments([]);
-      setImage(null);
+      setImageFile(null);
+      setImagePreview("");
       setLocation(null);
       onRequestClose();
     } catch (error) {
@@ -161,8 +170,18 @@ const ReportPopup = ({ isOpen, onRequestClose }) => {
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => setImage(e.target.files[0])}
+              onChange={handleImageChange}
             />
+
+            {imagePreview && (
+              <div className="image-preview-container">
+                <img
+                  src={imagePreview}
+                  alt="Selected Preview"
+                  className="image-preview"
+                />
+              </div>
+            )}
 
             <button
               type="button"
