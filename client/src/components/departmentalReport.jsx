@@ -4,7 +4,6 @@ import { getDepartmentalReports, updateStatusToInProgress, updateStatusToResolve
 import './departmentalReport.css';
 import Navbar from './navbar'; 
 
-// --- Attachment Modal Component (New) ---
 const AttachmentModal = ({ imageUrl, onClose }) => {
     return (
         <div className="modal-backdrop" onClick={onClose}>
@@ -27,12 +26,10 @@ const AttachmentModal = ({ imageUrl, onClose }) => {
 };
 
 
-// Component to display a single report item
 const ReportItem = ({ report, onReportStatusChange }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     
-    // --- Data Mapping based on Report Schema ---
     const reportDetails = {
         locationLink: report.location?.coordinates ? 
             `https://maps.google.com/?q=${report.location.coordinates[1]},${report.location.coordinates[0]}` : 
@@ -44,7 +41,7 @@ const ReportItem = ({ report, onReportStatusChange }) => {
         departments: report.departments,
         status: report.status,
         imageUrl: report.image?.url, 
-        isNotified: report.isNotifiedTOResolved, // NEW: Use the backend field
+        isNotified: report.isNotifiedTOResolved, 
         history: [
             { date: report.createdAt, note: `Report filed (${report.status})` },
         ],
@@ -58,17 +55,13 @@ const ReportItem = ({ report, onReportStatusChange }) => {
 
     const attachmentCount = reportDetails.imageUrl ? 1 : 0;
     
-    // Determine button visibility based on current status (for UX)
     const isProgressVisible = reportDetails.status === 'OPEN';
     
-    // NEW LOGIC: Show Resolve button only if IN_PROGRESS AND NOT already notified
     const showResolveButton = reportDetails.status === 'IN_PROGRESS' && !reportDetails.isNotified;
     
-    // NEW LOGIC: Show waiting message if IN_PROGRESS AND IS notified
     const showWaitingMessage = reportDetails.status === 'IN_PROGRESS' && reportDetails.isNotified;
 
     
-    // --- Handler for Mark In Progress (VERIFY route) ---
     const handleMarkInProgress = async (e) => {
         e.stopPropagation();
         
@@ -86,7 +79,6 @@ const ReportItem = ({ report, onReportStatusChange }) => {
         }
     };
     
-    // --- Handler for Resolution Notification (RESOLVE route) ---
     const handleNotifyCreator = async (e) => {
         e.stopPropagation();
         
@@ -97,8 +89,6 @@ const ReportItem = ({ report, onReportStatusChange }) => {
         try {
             const message = await updateStatusToResolvedNotification(reportDetails.id);
             
-            // CRITICAL FIX: Since the backend updates isNotifiedTOResolved and saves the report,
-            // we must trigger a refresh immediately so the component gets the new 'isNotified: true' status.
             onReportStatusChange('info', message); 
             
         } catch (error) {
@@ -224,7 +214,6 @@ const DepartmentalReport = () => {
 
     const isAuthorized = user?.role === 'staff' || user?.role === 'admin';
 
-    // Function to fetch reports (Memoized for stable dependency)
     const fetchReports = useCallback(async () => {
         setLoading(true);
         if (error && error.includes("reports found")) setError(null); 
@@ -241,14 +230,12 @@ const DepartmentalReport = () => {
         }
     }, [error]); 
 
-    // Effect to initially load data
     useEffect(() => {
         if (authLoading || !user || !isAuthorized) return;
         fetchReports();
     }, [user, authLoading, isAuthorized, fetchReports]);
 
 
-    // Effect for status message timeout
     useEffect(() => {
         if (statusMessage.message) {
             const timer = setTimeout(() => setStatusMessage({ type: '', message: '' }), 4000);
@@ -257,12 +244,9 @@ const DepartmentalReport = () => {
     }, [statusMessage]);
 
 
-    // Handler passed to ReportItem to update status and trigger refresh
     const handleReportStatusChange = useCallback((type, message) => {
         setStatusMessage({ type, message });
         
-        // CRITICAL FIX: We refresh the list for success (status change) OR for info (notification sent)
-        // because the backend updated isNotifiedTOResolved, and we need to pull that data.
         if (type === 'success' || type === 'info') { 
              fetchReports();
         }

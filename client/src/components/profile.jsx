@@ -4,7 +4,6 @@ import { updateProfileApi, removeDpApi } from '../services/UserServices'; // FIX
 import './profile.css';
 import Navbar from './navbar'; 
 
-// 1. Department List (Hardcoded from your backend model)
 const DEPARTMENT_OPTIONS = [
     "Water Supply & Sewage Department", "Public Health & Sanitation Department",
     "Roads & Infrastructure Department", "Street Lighting Department",
@@ -197,7 +196,7 @@ const EditForm = memo(({
 
 // --- Main Profile Component ---
 const Profile = () => {
-  // NOTE: Switched to 'UserService' assumption for API functions
+  
   const { user, loading, logout, setUser } = useAuth();
   const fileInputRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -205,7 +204,6 @@ const Profile = () => {
   const [formData, setFormData] = useState({});
   const [status, setStatus] = useState({ type: '', message: '' });
 
-  // Auto-clear status after 4 seconds
   useEffect(() => {
     if (status.message) {
       const timer = setTimeout(() => setStatus({ type: '', message: '' }), 4000);
@@ -283,19 +281,17 @@ const Profile = () => {
     const dataToSend = new FormData();
     let changesDetected = false;
 
-    // Change Detection (General fields)
     if (formData.name !== user.name) { dataToSend.append('name', formData.name); changesDetected = true; }
-    // CRITICAL: Ensure contact is treated as a string when appending to FormData
+    
     if (String(formData.contact) !== String(user.contact)) { dataToSend.append('contact', formData.contact); changesDetected = true; }
     if (formData.address !== user.address) { dataToSend.append('address', formData.address); changesDetected = true; }
 
-    // Change Detection (Departments)
     if (isStaffOrAdmin) {
       const currentDepartments = user.departments || [];
       const newDepartments = formData.departments || [];
       
       if (JSON.stringify(newDepartments.sort()) !== JSON.stringify(currentDepartments.sort())) {
-        // Append departments array: FormData handles arrays by appending multiple times
+        
         newDepartments.forEach(dept => {
              dataToSend.append('departments', dept);
         });
