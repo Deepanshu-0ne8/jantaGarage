@@ -1,6 +1,6 @@
 import express from 'express';
 import { authorize } from '../middlewares/auth.middleware.js';
-import { createReport, getAllReports, getReportById, getReportsByUserId, updateReportStatusTOInProgress, updateReportStatusTOResolved } from '../controllers/report.controllers.js';
+import { createReport, getAllReports, getReportById, getReportsByUserId, updateReportStatusTOInProgress, updateReportStatusTOResolvedNotifiction } from '../controllers/report.controllers.js';
 import { upload } from '../middlewares/multer.middleware.js';
 
 const reportRouter = express.Router();
@@ -19,7 +19,7 @@ reportRouter.delete('/delete/:id', authorize, (req, res, next) => {
 
 reportRouter.put('/verify/:id', authorize, updateReportStatusTOInProgress);
 
-reportRouter.put('/resolve/:id', authorize, updateReportStatusTOResolved);
+reportRouter.put('/resolve/:id', authorize, updateReportStatusTOResolvedNotifiction);
 
 
 

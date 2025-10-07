@@ -1,6 +1,6 @@
 import { DEFAULT_DP } from "../config/env.js";
 import Report from "../models/report.model.js";
-import { departmentList } from "../models/user.model.js";
+import User, { departmentList } from "../models/user.model.js";
 import { extractPublicId, uploadDpOnCloudinary } from "../utils/cloudinary.js";
 import { v2 as cloudinary } from "cloudinary";
 
@@ -177,12 +177,20 @@ export const removeDp = async (req, res, next) => {
    }
 }
 
-export const getPepartmentalReport = async (req, res, next) => {
+export const getdepartmentalReport = async (req, res, next) => {
     try {
         if (req.user.role === 'citizen') {
             return res.status(403).json({
                 status: 'fail',
                 message: 'You are not authorized to view departmental reports'
+            });
+        }
+
+        if(req.user.role === 'admin') {
+            const reports = await Report.find({});
+            return res.status(200).json({
+                success: true,
+                data: reports
             });
         }
 
@@ -203,3 +211,28 @@ export const getPepartmentalReport = async (req, res, next) => {
         next(error)
     }
 } 
+
+export const getReportsForVerification = async (req, res, next) => {
+    try {
+      const reportsId = req.user.reportsForVerification;
+      if(!reportsId || reportsId.length === 0) {
+        return res.status(404).json({
+            status: 'fail',
+            message: 'No reports found for verification'
+        });
+      }
+      const reports = await Report.find({_id: { $in: reportsId }});
+      if(reports.length === 0) {
+        return res.status(404).json({
+            status: 'fail',
+            message: 'No reports found for verification'
+        });
+      }
+        res.status(200).json({
+            success: true,
+            data: reports
+        })
+    } catch (error) {
+        next(error)
+    }
+}

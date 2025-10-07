@@ -75,6 +75,10 @@ const reportSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    isNotifiedTOResolved: {
+      type: Boolean,
+      default: false,
+    }
   },
   {
     timestamps: true,
