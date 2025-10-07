@@ -10,6 +10,8 @@ import "./App.css";
 import { AuthProvider } from "./context/authContext.jsx";
 import ProtectedRoute from "./components/protectedRoutes.jsx";
 import DepartmentalReport from "./components/departmentalReport.jsx";
+import VerifyReportStatus from "./components/verifyReportStatus.jsx";
+import ReportVerificationPage from "./components/reportVerification.jsx";
 
 const appRouter = createBrowserRouter([
   {
@@ -47,6 +49,14 @@ const appRouter = createBrowserRouter([
       {
         path: "/departmentalReports",
         element: <DepartmentalReport />,
+      },
+      {
+        path: "/verifyReportStatus",
+        element: <VerifyReportStatus />
+      },
+      {
+        path: "/notifications",
+        element: <ReportVerificationPage />
       }
     ],
   },

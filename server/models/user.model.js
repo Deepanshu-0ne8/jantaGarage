@@ -83,6 +83,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    reportsForVerification: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Report",
+      default: []
+    },
     departments: {
       type: [String],
       enum: departmentList,
