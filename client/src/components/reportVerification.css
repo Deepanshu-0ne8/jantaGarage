@@ -1,20 +1,36 @@
+/* src/components/departmentalReport.css - Styles for Staff/Admin Reports & Citizen Verification */
+
 :root {
---primary-color: #3b82f6; /* Blue - Actions/Links /
---accent-color: #10b981; / Green - Success/Resolved /
+--primary-color: #3b82f6; /* Blue /
+--accent-color: #10b981; / Green */
 --text-color-dark: #1f2937;
 --text-color-light: #4b5563;
 --bg-color: #f4f7f6;
 --card-bg: #ffffff;
 --border-radius: 10px;
---danger-color: #ef4444; / High Severity/Close /
---warning-color: #f59e0b; / Open/Medium Severity */
+
+/* Status Colors */
+--status-open: #f59e0b;       /* Amber */
+--status-in-progress: #3b82f6; /* Blue */
+--status-resolved: #10b981;   /* Green */
+
+/* Severity Colors */
+--severity-low: #3b82f6;
+--severity-medium: #f59e0b;
+--severity-high: #ef4444;
+
+/* Action Colors */
+--action-success: #22c55e; /* Green */
+--action-danger: #ef4444;  /* Red */
+
+--shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+
 }
 
 body {
 background-color: var(--bg-color);
 }
 
-/* --- Page Containers --- */
 .report-page-container {
 max-width: 1000px;
 margin: 20px auto;
@@ -29,7 +45,7 @@ margin: 20px auto;
 padding: 20px;
 }
 
-/* --- Header --- */
+/* --- Header & Status Alerts --- */
 .report-page-header {
 margin-bottom: 30px;
 padding-bottom: 15px;
@@ -45,6 +61,36 @@ margin-bottom: 5px;
 .report-page-header p {
 font-size: 1rem;
 color: var(--text-color-light);
+}
+
+.access-denied h2, .error-state h2 {
+color: var(--action-danger);
+}
+
+.status-alert {
+padding: 12px 20px;
+margin: 10px auto 25px auto;
+border-radius: var(--border-radius);
+font-weight: 500;
+max-width: 900px;
+text-align: center;
+border: 1px solid transparent;
+}
+
+.alert-success {
+background-color: #d1fae5;
+color: var(--action-success);
+border-color: var(--action-success);
+}
+.alert-info {
+background-color: #dbeafe;
+color: var(--primary-color);
+border-color: var(--primary-color);
+}
+.alert-error {
+background-color: #fee2e2;
+color: var(--action-danger);
+border-color: var(--action-danger);
 }
 
 /* --- List Items --- */
@@ -63,6 +109,11 @@ overflow: hidden;
 border: 1px solid #e5e7eb;
 }
 
+.report-card.verification-card {
+/* Highlight verification cards */
+border-left: 5px solid var(--action-success);
+}
+
 .report-card:hover {
 box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
@@ -78,12 +129,6 @@ border-bottom: 1px solid transparent;
 
 .report-summary:hover {
 background-color: #fcfcfc;
-}
-
-.report-id-info {
-display: flex;
-flex-direction: column;
-flex-grow: 1;
 }
 
 .report-id {
@@ -107,7 +152,7 @@ gap: 20px;
 flex-shrink: 0;
 }
 
-/* --- Status & Severity Badges --- */
+/* Status Badges */
 .report-status {
 padding: 4px 10px;
 border-radius: 20px;
@@ -116,15 +161,14 @@ font-weight: 700;
 color: white;
 }
 
-/* Status Colors: Mapped to schema values */
-.status-open { background-color: var(--warning-color); }
-.status-in-progress { background-color: var(--primary-color); }
-.status-resolved { background-color: var(--accent-color); }
+.status-open { background-color: var(--status-open); }
+.status-in-progress { background-color: var(--status-in-progress); }
+.status-resolved { background-color: var(--status-resolved); }
 
-/* Severity Colors */
-.severity-high { color: var(--danger-color); font-weight: 700; }
-.severity-medium { color: var(--warning-color); font-weight: 700; }
-.severity-low { color: var(--accent-color); font-weight: 700; }
+/* Severity Badges */
+.severity-low { color: var(--severity-low); font-weight: 700; }
+.severity-medium { color: var(--severity-medium); font-weight: 700; }
+.severity-high { color: var(--severity-high); font-weight: 700; }
 
 .report-date {
 font-size: 0.9rem;
@@ -141,7 +185,7 @@ color: var(--text-color-light);
 transform: rotate(90deg);
 }
 
-/* --- Details Section (Expanded) --- */
+/* --- Details Section Layout --- */
 .report-details {
 padding: 15px 20px 20px 20px;
 background-color: #f9f9f9;
@@ -149,24 +193,24 @@ border-top: 1px solid #e5e7eb;
 }
 
 .details-grid {
-/* Uses grid for cleaner layout alignment */
 display: grid;
 grid-template-columns: repeat(2, 1fr);
-gap: 15px 20px;
-margin-bottom: 15px;
+gap: 15px;
+margin-bottom: 20px;
 }
 
 .detail-field {
 margin: 0;
 font-size: 0.95rem;
-color: var(--text-color-dark);
 display: flex;
-flex-direction: row;
-align-items: flex-start;
+flex-wrap: wrap;
+}
+.detail-field.half-width {
 grid-column: span 1;
 }
-
-.detail-field.full-width { grid-column: 1 / -1; } /* Spans both columns */
+.detail-field.full-width {
+grid-column: span 2;
+}
 
 .detail-label {
 font-weight: 600;
@@ -176,11 +220,19 @@ margin-right: 10px;
 flex-shrink: 0;
 }
 
+.map-link {
+color: var(--primary-color);
+text-decoration: none;
+font-weight: 500;
+}
+.map-link:hover {
+text-decoration: underline;
+}
+
 .department-tags {
 display: flex;
-flex-wrap: wrap;
 gap: 8px;
-margin-top: 0;
+margin-top: 5px;
 }
 
 .dept-tag {
@@ -192,125 +244,109 @@ font-size: 0.7rem;
 font-weight: 500;
 }
 
-.dept-tag-none {
-color: var(--text-color-light);
-font-style: italic;
-font-size: 0.8rem;
-}
-
-.map-link {
-color: var(--primary-color);
-text-decoration: none;
-font-weight: 500;
-}
-
-.map-link:hover {
-text-decoration: underline;
-}
-
+/* --- Actions --- */
 .report-actions {
 margin-top: 15px;
 padding-top: 15px;
 border-top: 1px dashed #e5e7eb;
 display: flex;
+flex-wrap: wrap;
 gap: 10px;
+align-items: center;
 }
 
 .action-button {
-padding: 10px 15px;
+padding: 8px 15px;
 border-radius: 6px;
 font-size: 0.9rem;
-font-weight: 600;
 cursor: pointer;
-transition: background-color 0.2s;
-display: flex;
-align-items: center;
-gap: 8px;
+transition: background-color 0.2s, opacity 0.2s;
+border: 1px solid transparent;
 }
+.action-button i {
+margin-right: 5px;
+}
+
 .action-button:disabled {
-opacity: 0.5;
+opacity: 0.6;
 cursor: not-allowed;
 }
 
 .primary-action {
 background-color: var(--primary-color);
 color: white;
-border: 1px solid var(--primary-color);
 }
-
-.primary-action:hover:not(:disabled) {
+.primary-action:hover {
 background-color: #2563eb;
 }
 
+/* Staff Status Update Buttons */
 .secondary-action {
 background-color: transparent;
+border-color: var(--primary-color);
 color: var(--primary-color);
-border: 1px solid var(--primary-color);
 }
-
-.secondary-action:hover:not(:disabled) {
+.secondary-action:hover {
 background-color: #e0f2fe;
 }
-
-/* --- State Messages & Errors --- */
-.loading-state, .error-state, .access-denied, .no-reports-message {
-padding: 40px;
-margin: 50px auto;
-background-color: var(--card-bg);
-border-radius: var(--border-radius);
-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-max-width: 600px;
+.status-action-reopen {
+color: var(--severity-medium);
+border-color: var(--severity-medium);
+}
+.status-action-reopen:hover {
+background-color: #fffbeb;
 }
 
-.access-denied h2, .error-state h2 {
-color: var(--danger-color);
-}
-
-.no-reports-message {
-text-align: center;
+.resolution-waiting-message {
 color: var(--text-color-light);
-font-size: 1.1rem;
+font-style: italic;
+font-size: 0.9rem;
+padding: 8px 0;
 }
 
-.no-reports-message i {
-font-size: 3rem;
-color: #ccc;
-margin-bottom: 15px;
+/* --- Citizen Verification Actions (Specific Styles) --- */
+.success-action {
+background-color: var(--action-success);
+color: white;
+}
+.success-action:hover {
+background-color: #16a34a;
 }
 
-/* --- ATTACHMENT MODAL STYLES --- */
+.danger-action {
+background-color: var(--action-danger);
+color: white;
+}
+.danger-action:hover {
+background-color: #dc2626;
+}
+
+/* --- Modal Styles --- */
 .modal-backdrop {
 position: fixed;
 top: 0;
 left: 0;
-right: 0;
-bottom: 0;
-background-color: rgba(0, 0, 0, 0.9); /* Darker background for image modal */
+width: 100%;
+height: 100%;
+background-color: rgba(0, 0, 0, 0.85);
 display: flex;
 justify-content: center;
 align-items: center;
-z-index: 2000;
-opacity: 0;
-animation: modalFadeIn 0.3s forwards;
+z-index: 1000;
 }
 
 .attachment-modal {
-background-color: #111; /* Dark background for modal content */
+background-color: var(--card-bg);
 border-radius: var(--border-radius);
 padding: 20px;
-width: 80vw;
-height: 80vh;
-box-shadow: 0 10px 20px rgba(0, 0, 0, 0.8);
+width: 80vw; /* 80% screen width as requested /
+height: 80vh; / 80% screen height as requested */
+max-width: 1000px;
+max-height: 800px;
+box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
 position: relative;
-overflow: hidden;
 display: flex;
 flex-direction: column;
-}
-.attachment-modal h3 {
-color: white;
-margin-bottom: 10px;
-border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-padding-bottom: 10px;
 }
 
 .modal-close-btn {
@@ -320,51 +356,41 @@ right: 10px;
 background: none;
 border: none;
 font-size: 2rem;
-color: white; /* White close button */
+color: var(--text-color-dark);
 cursor: pointer;
 line-height: 1;
-z-index: 2001;
-text-shadow: 0 0 5px #000;
 }
 
 .attachment-viewer {
 flex-grow: 1;
-display: flex;
-justify-content: center;
-align-items: center;
 overflow: hidden;
-}
-
-.attachment-item {
-background-color: transparent;
-max-width: 100%;
-max-height: 100%;
-overflow: hidden;
-text-align: center;
+margin-top: 10px;
 }
 
 .attachment-image {
-max-width: 100%;
-max-height: 100%;
-object-fit: contain; /* Important: Scale image down while preserving aspect ratio */
-display: block;
+width: 100%;
+height: 100%;
+object-fit: contain; /* Ensure image fits without cropping */
+border-radius: 6px;
 }
-
 .no-attachments {
 text-align: center;
+padding: 50px 0;
 color: var(--text-color-light);
-margin-top: 40px;
-}
-
-@keyframes modalFadeIn {
-from { opacity: 0; }
-to { opacity: 1; }
 }
 
 /* --- Responsiveness --- */
 @media (max-width: 768px) {
 .report-page-wrapper {
 padding: 10px;
+}
+.details-grid {
+grid-template-columns: 1fr; /* Single column on mobile */
+gap: 10px;
+}
+.detail-field.half-width,
+.detail-field.full-width {
+grid-column: span 1;
 }
 .report-summary {
 flex-direction: column;
@@ -375,42 +401,19 @@ margin-top: 10px;
 width: 100%;
 justify-content: space-between;
 }
-.report-id-info {
-width: 100%;
-margin-bottom: 5px;
-}
 .chevron {
 align-self: flex-start;
 order: -1;
 }
 .report-actions {
 flex-direction: column;
+gap: 8px;
 }
 .action-button {
 width: 100%;
 }
-
-/* Mobile Fixes for Details Grid */
-.details-grid {
-    grid-template-columns: 1fr; /* Single column grid for details on mobile */
-    gap: 5px 0;
-}
-.detail-field {
-    grid-column: 1 / -1;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-}
-.detail-label {
-    min-width: auto;
-    margin-right: 0;
-}
-
-/* Modal for Mobile */
 .attachment-modal {
-    width: 95vw;
-    height: 95vh;
-    padding: 15px;
+width: 90vw;
+height: 90vh;
 }
-
 }

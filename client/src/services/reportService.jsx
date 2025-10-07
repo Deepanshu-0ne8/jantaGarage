@@ -20,3 +20,39 @@ export const getDepartmentalReports = async () => {
         throw new Error(errorMessage);
     }
 };
+
+export const updateStatusToInProgress = async (reportId) => {
+    try {
+        // Your backend uses PUT /reports/verify/:id
+        const response = await api.put(`/reports/verify/${reportId}`);
+        // Backend returns: { success: true, message: "Report verified successfully.", data: report }
+        return response.data.data;
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || "Failed to update status to In Progress.";
+        throw new Error(errorMessage);
+    }
+};
+
+
+export const updateStatusToResolvedNotification = async (reportId) => {
+    try {
+        // Your backend uses PUT /reports/resolve/:id
+        const response = await api.put(`/reports/resolve/${reportId}`);
+        // Backend returns: { success: true, message: "Notification sent..." }
+        return response.data.message; 
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || "Failed to send resolution notification.";
+        throw new Error(errorMessage);
+    }
+};
+
+export const getReportsForVerification = async () => {
+    try {
+        const response = await api.get('/user/reportForVerification');
+        // Backend returns: { success: true, data: reports }
+        return response.data.data;
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || "Failed to fetch reports for verification.";
+        throw new Error(errorMessage);
+    }
+};

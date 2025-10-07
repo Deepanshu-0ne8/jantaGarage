@@ -98,7 +98,6 @@ const Home = () => {
                 <thead>
                   <tr>
                     <th>Image</th>
-                    <th>User</th>
                     <th>Report Title</th>
                     <th>Date</th>
                     <th>Status</th>
@@ -122,12 +121,6 @@ const Home = () => {
                         ) : (
                           <div className="no-img">No Image</div>
                         )}
-                      </td>
-                      <td>
-                        <div className="user-info">
-                          <p className="user-name">newUser</p>
-                          <p className="user-email">abc@gmail.com</p>
-                        </div>
                       </td>
                       <td>{report.title}</td>
                       <td>

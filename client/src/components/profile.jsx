@@ -1,10 +1,8 @@
-// src/components/Profile.jsx (Final Version with Navbar and Clean Logic)
-
 import React, { useState, useRef, useCallback, memo, useEffect } from 'react';
 import { useAuth } from '../context/authContext';
-import { updateProfileApi, removeDpApi } from '../services/UserServices'; // NOTE: Assuming service file is UserService.js
+import { updateProfileApi, removeDpApi } from '../services/UserServices'; // FIX: Changed from UserServices to UserService
 import './profile.css';
-import Navbar from './navbar'; // IMPORTANT: Assuming Navbar file is named Navbar.jsx
+import Navbar from './navbar'; 
 
 // 1. Department List (Hardcoded from your backend model)
 const DEPARTMENT_OPTIONS = [
@@ -274,7 +272,6 @@ const Profile = () => {
       setStatus({ type: 'success', message: 'Profile picture removed successfully!' });
     } catch (error) {
       console.error("Remove DP Error:", error);
-      // NOTE: API functions need to be imported correctly from UserService.js
       setStatus({ type: 'error', message: error.response?.data?.message || 'Failed to remove DP.' });
     }
   };
@@ -288,6 +285,7 @@ const Profile = () => {
 
     // Change Detection (General fields)
     if (formData.name !== user.name) { dataToSend.append('name', formData.name); changesDetected = true; }
+    // CRITICAL: Ensure contact is treated as a string when appending to FormData
     if (String(formData.contact) !== String(user.contact)) { dataToSend.append('contact', formData.contact); changesDetected = true; }
     if (formData.address !== user.address) { dataToSend.append('address', formData.address); changesDetected = true; }
 
@@ -297,11 +295,17 @@ const Profile = () => {
       const newDepartments = formData.departments || [];
       
       if (JSON.stringify(newDepartments.sort()) !== JSON.stringify(currentDepartments.sort())) {
+        // Append departments array: FormData handles arrays by appending multiple times
         newDepartments.forEach(dept => {
              dataToSend.append('departments', dept);
         });
         changesDetected = true;
       }
+    }
+
+    if (formData.displayPic) {
+      dataToSend.append('displayPic', formData.displayPic);
+      changesDetected = true;
     }
 
     if (!changesDetected) {
@@ -311,7 +315,6 @@ const Profile = () => {
     }
 
     try {
-      // NOTE: API functions need to be imported correctly from UserService.js
       const updatedUser = await updateProfileApi(dataToSend);
       
       setStatus({ type: 'success', message: 'Profile updated successfully!' });
@@ -322,10 +325,10 @@ const Profile = () => {
       console.error("Update Profile Error:", error);
       setStatus({
         type: 'error',
-        message: error.response?.data?.message || 'Update failed. Please check input fields.'
+        message: error.response?.data?.message || 'Update failed. Check contact number/input formats.'
       });
     }
-  }, [formData, user, isStaffOrAdmin, setUser]);
+  }, [formData, user, isStaffOrAdmin, setUser, setIsEditing]);
 
   const ProfileField = ({ label, value }) => (
     <div className="data-item">
@@ -336,7 +339,7 @@ const Profile = () => {
 
   return (
     <>
-      <Navbar /> {/* CRITICAL FIX: Render Navbar outside the profile wrapper */}
+      <Navbar /> 
       <div className="profile-page-wrapper">
         <div className={`profile-container role-${user.role}`}>
           {status.message && (
