@@ -1,0 +1,538 @@
+/* src/components/StaffList.css */
+
+:root {
+--primary-color: #3b82f6; 
+--accent-color: #10b981; 
+--admin-color: #ef4444; 
+--text-color-dark: #1f2937;
+--text-color-light: #4b5563;
+--bg-light: #f9fafb;
+--card-bg: #ffffff;
+--border-radius: 10px;
+--shadow-md: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.staff-list-wrapper {
+max-width: 1000px;
+margin: 20px auto;
+padding: 20px;
+}
+
+/* --- Header --- */
+.staff-list-header {
+margin-bottom: 30px;
+padding-bottom: 15px;
+border-bottom: 2px solid #e5e7eb;
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+}
+
+.staff-list-header h1 {
+font-size: 1.8rem;
+color: var(--text-color-dark);
+margin: 5px 0 5px 0;
+}
+
+.report-context {
+font-size: 0.95rem;
+color: var(--text-color-light);
+}
+
+.back-button {
+background: none;
+border: none;
+color: var(--text-color-light);
+font-size: 0.9rem;
+cursor: pointer;
+padding: 5px 10px 5px 0;
+margin-bottom: 10px;
+transition: color 0.2s;
+}
+.back-button:hover {
+color: var(--primary-color);
+}
+.back-button i {
+margin-right: 5px;
+}
+
+/* --- Staff Grid --- */
+.staff-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+gap: 20px;
+}
+
+.staff-card {
+background-color: var(--card-bg);
+border-radius: var(--border-radius);
+box-shadow: var(--shadow-md);
+padding: 15px;
+display: flex;
+flex-direction: column;
+gap: 10px;
+border: 1px solid #f3f4f6;
+transition: border-color 0.2s;
+}
+
+.staff-card:hover {
+border-color: var(--primary-color);
+}
+
+.staff-info {
+display: flex;
+align-items: center;
+gap: 15px;
+padding-bottom: 10px;
+border-bottom: 1px dashed #e5e7eb;
+}
+
+.staff-avatar-initial {
+width: 50px;
+height: 50px;
+border-radius: 50%;
+background-color: var(--accent-color);
+color: white;
+font-size: 20px;
+font-weight: 600;
+display: flex;
+justify-content: center;
+align-items: center;
+flex-shrink: 0;
+}
+
+.staff-name {
+font-size: 1.1rem;
+font-weight: 700;
+margin: 0;
+color: var(--text-color-dark);
+}
+
+.staff-email {
+font-size: 0.85rem;
+color: var(--text-color-light);
+margin: 0;
+}
+
+.staff-departments {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin-bottom: 10px;
+}
+
+.dept-tag-mini {
+background-color: #e0f7fa;
+color: var(--primary-color);
+padding: 4px 8px;
+border-radius: 4px;
+font-size: 0.75rem;
+font-weight: 500;
+border: 1px solid #b3e5fc;
+}
+
+.assign-button {
+background-color: var(--primary-color);
+color: white;
+border: none;
+padding: 10px 15px;
+border-radius: 6px;
+font-size: 0.95rem;
+font-weight: 600;
+cursor: pointer;
+transition: background-color 0.2s;
+width: 100%;
+}
+.assign-button:hover {
+background-color: #2563eb;
+}
+.assign-button i {
+margin-left: 5px;
+}
+
+/* --- Status and Loading --- */
+.loading-state, .error-state, .no-staff-message {
+padding: 40px;
+margin: 30px auto;
+background-color: var(--card-bg);
+border-radius: var(--border-radius);
+box-shadow: var(--shadow-md);
+text-align: center;
+}
+
+.no-staff-message p {
+color: var(--text-color-light);
+}
+.no-staff-message i {
+font-size: 3rem;
+color: #ccc;
+margin-bottom: 15px;
+}
+
+.status-alert {
+padding: 15px;
+border-radius: var(--border-radius);
+margin-bottom: 20px;
+font-weight: 600;
+text-align: center;
+}
+.alert-success {
+background-color: #d4edda;
+color: var(--accent-color);
+}
+.alert-error {
+background-color: #f8d7da;
+color: var(--admin-color);
+}
+
+.loading-overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(255, 255, 255, 0.8);
+display: flex;
+justify-content: center;
+align-items: center;
+font-size: 1.5rem;
+font-weight: 700;
+color: var(--primary-color);
+z-index: 2000;
+}
+
+/* --- Responsiveness --- */
+@media (max-width: 600px) {
+.staff-list-wrapper {
+padding: 10px;
+}
+.staff-grid {
+grid-template-columns: 1fr;
+}
+}/* src/components/StaffList.css */
+
+:root {
+--primary-color: #3b82f6; 
+--accent-color: #10b981; 
+--admin-color: #ef4444; 
+--text-color-dark: #1f2937;
+--text-color-light: #4b5563;
+--bg-light: #f9fafb;
+--card-bg: #ffffff;
+--border-radius: 10px;
+--shadow-md: 0 4px 8px rgba(0, 0, 0, 0.05);
+--workload-low: #81c784;
+--workload-high: #ef4444; 
+}
+
+/* --- Base Layout --- */
+.staff-list-wrapper {
+max-width: 1000px;
+margin: 20px auto;
+padding: 20px;
+position: relative;
+}
+
+/* --- Header --- */
+.staff-list-header {
+margin-bottom: 30px;
+padding-bottom: 15px;
+border-bottom: 2px solid #e5e7eb;
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+}
+
+.staff-list-header h1 {
+font-size: 1.8rem;
+color: var(--text-color-dark);
+margin: 5px 0 5px 0;
+}
+
+.report-context {
+font-size: 0.95rem;
+color: var(--text-color-light);
+}
+
+.sort-indicator {
+font-size: 0.9rem;
+color: var(--primary-color);
+margin-top: 5px;
+font-weight: 600;
+}
+
+.back-button {
+background: none;
+border: none;
+color: var(--text-color-light);
+font-size: 0.9rem;
+cursor: pointer;
+padding: 5px 10px 5px 0;
+margin-bottom: 10px;
+transition: color 0.2s;
+}
+.back-button:hover {
+color: var(--primary-color);
+}
+.back-button i {
+margin-right: 5px;
+}
+
+/* --- Staff Grid --- */
+.staff-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+gap: 20px;
+}
+
+/* --- Staff Card (Clickable Item) --- */
+.staff-card {
+background-color: var(--card-bg);
+border-radius: var(--border-radius);
+box-shadow: var(--shadow-md);
+padding: 15px;
+display: flex;
+flex-direction: column;
+gap: 12px;
+border: 1px solid #f3f4f6;
+transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+cursor: pointer;
+}
+
+.staff-card:hover {
+border-color: var(--primary-color);
+box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+transform: translateY(-2px);
+}
+
+.staff-info {
+display: flex;
+align-items: center;
+gap: 15px;
+padding-bottom: 10px;
+border-bottom: 1px dashed #e5e7eb;
+}
+
+.staff-avatar-initial {
+width: 50px;
+height: 50px;
+border-radius: 50%;
+background-color: var(--primary-color);
+color: white;
+font-size: 20px;
+font-weight: 600;
+display: flex;
+justify-content: center;
+align-items: center;
+flex-shrink: 0;
+}
+
+.staff-name {
+font-size: 1.1rem;
+font-weight: 700;
+margin: 0;
+color: var(--text-color-dark);
+}
+
+.staff-email {
+font-size: 0.85rem;
+color: var(--text-color-light);
+margin: 0;
+}
+
+/* --- Workload Display --- */
+.staff-workload {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 5px 0;
+}
+
+.workload-label {
+font-size: 0.9rem;
+color: var(--text-color-light);
+}
+
+.workload-count {
+font-size: 1.2rem;
+font-weight: 700;
+/* Dynamic color based on count - using classes/logic in JSX is better,
+but here we set a base color */
+color: var(--primary-color);
+}
+
+.staff-departments {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin-bottom: 10px;
+}
+
+.dept-tag-mini {
+background-color: #e0f7fa;
+color: var(--primary-color);
+padding: 4px 8px;
+border-radius: 4px;
+font-size: 0.75rem;
+font-weight: 500;
+border: 1px solid #b3e5fc;
+}
+
+/* --- Modals and Popups --- */
+
+/* Modal Overlay */
+.staff-overlay {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: rgba(0, 0, 0, 0.6);
+z-index: 2000;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 20px;
+}
+
+/* Modal Content */
+.staff-modal {
+background: var(--card-bg);
+border-radius: 12px;
+max-width: 450px;
+width: 95%;
+padding: 25px;
+outline: none;
+position: relative;
+box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.staff-detail-popup {
+padding-top: 10px;
+}
+
+.modal-close-btn {
+position: absolute;
+top: 10px;
+right: 15px;
+background: none;
+border: none;
+font-size: 1.8rem;
+color: var(--text-color-light);
+cursor: pointer;
+}
+
+.staff-detail-header {
+display: flex;
+flex-direction: column;
+align-items: center;
+padding-bottom: 15px;
+margin-bottom: 20px;
+border-bottom: 2px solid var(--primary-color);
+}
+
+.staff-detail-avatar {
+width: 70px;
+height: 70px;
+border-radius: 50%;
+background-color: var(--accent-color);
+color: white;
+font-size: 30px;
+font-weight: 700;
+display: flex;
+justify-content: center;
+align-items: center;
+margin-bottom: 10px;
+}
+
+.staff-detail-name {
+font-size: 1.5rem;
+color: var(--text-color-dark);
+margin: 0;
+}
+
+.staff-detail-grid {
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+
+.staff-detail-grid .detail-field {
+font-size: 1rem;
+padding: 8px 0;
+border-bottom: 1px dotted #e5e7eb;
+}
+
+.staff-detail-grid strong {
+font-weight: 600;
+color: var(--text-color-light);
+display: inline-block;
+min-width: 150px;
+}
+
+.modal-assign-button {
+margin-top: 25px;
+padding: 12px;
+font-size: 1rem;
+width: 100%;
+background-color: var(--admin-color); /* Use a strong color for the final action */
+}
+
+.modal-assign-button:hover:not(:disabled) {
+background-color: #d83b3b;
+}
+
+/* --- Status and Loading --- */
+.status-alert {
+padding: 15px;
+border-radius: var(--border-radius);
+margin-bottom: 20px;
+font-weight: 600;
+text-align: center;
+}
+.alert-success {
+background-color: #d4edda;
+color: var(--accent-color);
+}
+.alert-error {
+background-color: #f8d7da;
+color: var(--admin-color);
+}
+
+.no-staff-message {
+padding: 40px;
+margin: 30px auto;
+background-color: var(--card-bg);
+border-radius: var(--border-radius);
+box-shadow: var(--shadow-md);
+text-align: center;
+}
+
+.loading-overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(255, 255, 255, 0.8);
+display: flex;
+justify-content: center;
+align-items: center;
+font-size: 1.5rem;
+font-weight: 700;
+color: var(--primary-color);
+z-index: 2000;
+}
+
+/* --- Responsiveness --- */
+@media (max-width: 600px) {
+.staff-list-wrapper {
+padding: 10px;
+}
+.staff-grid {
+grid-template-columns: 1fr;
+}
+.staff-detail-grid strong {
+min-width: 100px;
+}
+}

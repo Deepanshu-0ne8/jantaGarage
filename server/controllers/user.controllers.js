@@ -1,8 +1,18 @@
+import { assign } from "nodemailer/lib/shared/index.js";
 import { DEFAULT_DP } from "../config/env.js";
 import Report from "../models/report.model.js";
 import User, { departmentList } from "../models/user.model.js";
 import { extractPublicId, uploadDpOnCloudinary } from "../utils/cloudinary.js";
 import { v2 as cloudinary } from "cloudinary";
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'patidardeepanshu910@gmail.com',
+        pass: 'dosv rzwn tchz kifx'
+    }
+});
 
 export const getProfile = async (req, res, next) => {
   try {
@@ -234,5 +244,120 @@ export const getReportsForVerification = async (req, res, next) => {
         })
     } catch (error) {
         next(error)
+    }
+}
+
+
+export const rejectVerification = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const report = await Report.findById(id);
+        if(!report) {
+            return res.status(404).json({
+                status: 'fail',
+                message: 'Report not found'
+            });
+        }
+        report.status = "OPEN";
+        report.isNotifiedTOResolved = false;
+        await report.save();
+
+        await User.findByIdAndUpdate(report.createdBy, { $pull: { reportsForVerification: id } });
+
+        await transporter.sendMail({
+            from: 'patidardeepanshu910@gmail.com',
+            to: user.email,
+            subject: 'Problem Resolved verification',
+            text: `Your report with the title: ${report.title} has been marked as resolved. Please verify the resolution at your earliest convenience.`
+        });
+
+    } catch (error) {
+        next(error)
+    }
+}
+
+
+
+export const assignReportToStaff = async (req, res, next) => {
+    try {
+      const { reportId, staffId } = req.body;
+
+      if (!reportId || !staffId) {
+        return res.status(400).json({
+          success: false,
+          message: "Both reportId and staffId are required.",
+        });
+      }
+
+      const report = await Report.findById(reportId);
+      if (!report) {
+        return res.status(404).json({
+          success: false,
+          message: "Report not found.",
+        });
+      }
+
+      const staff = await User.findById(staffId);
+      if (!staff || (staff.role === "citizen" || staff.role === "admin")) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid staff ID or user is not a staff member.",
+        });
+      }
+
+      if (report.isAssigned) {
+        return res.status(400).json({
+          success: false,
+          message: "Report is already assigned to a staff member.",
+        });
+      }
+
+      report.isAssigned = true;
+      report.assignedTo = staff._id;
+      await report.save();
+
+      staff.reportsAssigned.push(report._id);
+      await staff.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Report assigned to staff successfully.",
+        data: { report, staff },
+      });
+    } catch (error) {
+      next(error);
+    }
+}
+
+
+export const getAssignedReports = async (req, res, next) => {
+    try {
+      const user = req.user;
+      if(user.role === "citizen" || user.role === "admin") {
+        return res.status(403).json({
+            success: false,
+            message: "Only staff members can have assigned reports."
+        });
+      }
+      const reportsId = user.reportsAssigned;
+      if(!reportsId || reportsId.length === 0) {
+        return res.status(404).json({
+            success: false,
+            message: 'No assigned reports found for this staff'
+        });
+      }
+      const reports = await Report.find({_id: { $in: reportsId }});
+      if(reports.length === 0) {
+        return res.status(404).json({
+            success: false,
+            message: 'No assigned reports found for this staff'
+        });
+      }
+        res.status(200).json({
+            success: true,
+            data: reports
+        })
+    } catch (error) {
+      next(error);
     }
 }

@@ -56,3 +56,29 @@ export const getReportsForVerification = async () => {
         throw new Error(errorMessage);
     }
 };
+
+
+export const getUnassignedReports = async () => {
+    try {
+        const response = await api.get('/reports/unAssigned');
+        
+        // Backend returns: { status: "success", data: reports }
+        return response.data.data;
+        
+    } catch (error) {
+        // Catches 403 (Unauthorized - non-admin) or 404/500 errors
+        const errorMessage = error.response?.data?.message || "Failed to fetch unassigned reports.";
+        throw new Error(errorMessage);
+    }
+};
+
+
+export const getAllEligibleStaff = async (reportId) => {
+    try {
+        const response = await api.get(`/reports/getAllStaff/${reportId}`);
+        return response.data.data;
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || "Failed to fetch staff list.";
+        throw new Error(errorMessage);
+    }
+};

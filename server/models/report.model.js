@@ -78,6 +78,14 @@ const reportSchema = new mongoose.Schema(
     isNotifiedTOResolved: {
       type: Boolean,
       default: false,
+    },
+    isAssigned: {
+      type: Boolean,
+      default: false,
+    },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     }
   },
   {

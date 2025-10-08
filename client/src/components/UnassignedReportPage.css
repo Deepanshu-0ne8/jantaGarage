@@ -1,0 +1,257 @@
+/* src/components/UnassignedReportPage.css */
+
+:root {
+--primary-color: #3b82f6; /* Blue /
+--accent-color: #10b981; / Green */
+--text-color-dark: #1f2937;
+--text-color-light: #4b5563;
+--bg-color: #f4f7f6;
+--card-bg: #ffffff;
+--border-radius: 10px;
+
+/* Status Colors */
+--status-unassigned: #ef4444; /* Red, indicating priority action needed */
+
+/* Severity Colors */
+--severity-low: #3b82f6;
+--severity-medium: #f59e0b;
+--severity-high: #ef4444;
+
+--shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+
+}
+
+body {
+background-color: var(--bg-color);
+}
+
+.report-page-container {
+max-width: 1000px;
+margin: 20px auto;
+padding: 20px;
+border-radius: var(--border-radius);
+text-align: center;
+}
+
+.report-page-wrapper {
+max-width: 1000px;
+margin: 20px auto;
+padding: 20px;
+}
+
+/* --- Header & Messages --- */
+.report-page-header {
+margin-bottom: 30px;
+padding-bottom: 15px;
+border-bottom: 2px solid var(--status-unassigned);
+}
+
+.report-page-header h1 {
+font-size: 2rem;
+color: var(--text-color-dark);
+margin-bottom: 5px;
+}
+
+.report-page-header p {
+font-size: 1rem;
+color: var(--status-unassigned);
+font-weight: 600;
+}
+
+.access-denied h2 {
+color: var(--status-unassigned);
+}
+
+/* --- List Items --- */
+.report-list {
+display: flex;
+flex-direction: column;
+gap: 15px;
+}
+
+.report-card {
+background-color: var(--card-bg);
+border-radius: var(--border-radius);
+box-shadow: var(--shadow-md);
+transition: transform 0.2s, box-shadow 0.2s;
+overflow: hidden;
+border: 1px solid #e5e7eb;
+}
+.unassigned-card {
+/* Highlight the card with a strong border */
+border-left: 5px solid var(--status-unassigned);
+}
+
+.report-summary {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 15px 20px;
+cursor: pointer;
+}
+.report-summary:hover {
+background-color: #fffafa; /* Light red hover */
+}
+
+.report-id {
+font-size: 0.8rem;
+color: var(--text-color-light);
+font-weight: 600;
+margin-bottom: 2px;
+}
+
+.report-title {
+font-size: 1.1rem;
+font-weight: 600;
+color: var(--text-color-dark);
+margin: 0;
+}
+
+.report-meta {
+display: flex;
+align-items: center;
+gap: 20px;
+flex-shrink: 0;
+}
+
+/* Unassigned Status and Severity Badges */
+.report-severity {
+padding: 4px 10px;
+border-radius: 4px;
+font-size: 0.75rem;
+font-weight: 700;
+color: white;
+}
+
+.severity-low { background-color: var(--severity-low); }
+.severity-medium { background-color: var(--severity-medium); }
+.severity-high { background-color: var(--severity-high); }
+
+.status-unassigned {
+color: var(--status-unassigned);
+font-weight: 700;
+}
+
+.report-date {
+font-size: 0.9rem;
+color: var(--text-color-light);
+}
+
+.chevron {
+transition: transform 0.3s;
+font-size: 0.8rem;
+color: var(--text-color-light);
+}
+.chevron.open {
+transform: rotate(90deg);
+}
+
+/* --- Details Section --- */
+.report-details {
+padding: 15px 20px 20px 20px;
+background-color: #f9f9f9;
+border-top: 1px solid #e5e7eb;
+}
+
+.details-grid {
+display: grid;
+grid-template-columns: repeat(2, 1fr);
+gap: 15px;
+margin-bottom: 20px;
+}
+
+.detail-field {
+margin: 0;
+font-size: 0.95rem;
+display: flex;
+flex-wrap: wrap;
+}
+.detail-field.half-width {
+grid-column: span 1;
+}
+.detail-field.full-width {
+grid-column: span 2;
+}
+
+.detail-label {
+font-weight: 600;
+color: var(--text-color-light);
+min-width: 120px;
+margin-right: 10px;
+flex-shrink: 0;
+}
+
+.department-tags {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin-top: 5px;
+}
+.dept-tag {
+background-color: var(--primary-color);
+color: white;
+padding: 2px 8px;
+border-radius: 4px;
+font-size: 0.7rem;
+font-weight: 500;
+}
+
+/* --- Actions --- */
+.report-actions {
+margin-top: 15px;
+padding-top: 15px;
+border-top: 1px dashed #e5e7eb;
+}
+
+.assign-button {
+background-color: var(--status-unassigned);
+color: white;
+border: none;
+padding: 10px 20px;
+border-radius: 6px;
+font-size: 1rem;
+font-weight: 600;
+cursor: pointer;
+transition: background-color 0.2s;
+}
+.assign-button:hover {
+background-color: #d83b3b;
+}
+
+/* --- State Messages --- */
+.no-reports-message {
+text-align: center;
+color: var(--text-color-light);
+font-size: 1.1rem;
+padding: 40px;
+margin: 30px auto;
+background-color: var(--card-bg);
+border-radius: var(--border-radius);
+box-shadow: var(--shadow-md);
+max-width: 600px;
+}
+
+.no-reports-message i {
+font-size: 3rem;
+color: var(--primary-color);
+margin-bottom: 15px;
+}
+
+/* --- Responsiveness --- */
+@media (max-width: 768px) {
+.report-page-wrapper {
+padding: 10px;
+}
+.details-grid {
+grid-template-columns: 1fr;
+gap: 10px;
+}
+.report-meta {
+margin-top: 10px;
+width: 100%;
+justify-content: space-between;
+}
+.assign-button {
+width: 100%;
+}
+}

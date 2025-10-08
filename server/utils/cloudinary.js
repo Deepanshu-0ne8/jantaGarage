@@ -20,19 +20,16 @@ export const uploadrepOnCloudinary = async (localFilePath) => {
     try {
         if (!localFilePath) return null;
 
-        // Upload the file on cloudinary
         const response = await cloudinary.uploader.upload(localFilePath, {
             resource_type: "auto",
-            folder: "jantaGarage/reportsimage" // Optional: specify a folder
+            folder: "jantaGarage/reportsimage" 
         });
 
-        // File has been uploaded successfully
-        // console.log("File is uploaded on cloudinary", response.url);
+       
         return response;
 
     } catch (error) {
-        // You might want to delete the file from the local server after a failed upload
-        // fs.unlinkSync(localFilePath); 
+        
         console.error("Cloudinary upload failed:", error);
         return null;
     }
@@ -42,19 +39,16 @@ export const uploadDpOnCloudinary = async (localFilePath) => {
     try {
         if (!localFilePath) return null;
 
-        // Upload the file on cloudinary
         const response = await cloudinary.uploader.upload(localFilePath, {
             resource_type: "auto",
-            folder: "jantaGarage/DisplayPics" // Optional: specify a folder
+            folder: "jantaGarage/DisplayPics" 
         });
 
-        // File has been uploaded successfully
-        // console.log("File is uploaded on cloudinary", response.url);
+        
         return response;
 
     } catch (error) {
-        // You might want to delete the file from the local server after a failed upload
-        // fs.unlinkSync(localFilePath); 
+        
         console.error("Cloudinary upload failed:", error);
         return null;
     }
@@ -62,11 +56,9 @@ export const uploadDpOnCloudinary = async (localFilePath) => {
 
 export const extractPublicId = (url) => {
   try {
-    // Example: https://res.cloudinary.com/demo/image/upload/v1696001234/myfolder/testimage.jpg
     const parts = url.split("/");
-    const versionAndPublicId = parts.slice(7).join("/"); // skip until after 'upload/'
-    const withoutExtension = versionAndPublicId.replace(/\.[^/.]+$/, ""); // remove extension
-    // remove version number like v1234567890/
+    const versionAndPublicId = parts.slice(7).join("/"); 
+    const withoutExtension = versionAndPublicId.replace(/\.[^/.]+$/, ""); 
     return withoutExtension.replace(/^v[0-9]+\//, "");
   } catch (err) {
     console.error("Invalid Cloudinary URL");
