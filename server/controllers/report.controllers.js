@@ -247,6 +247,58 @@ export const updateReportStatusTOResolvedNotifiction = async (req, res, next) =>
 };
 
 
+export const getAllUnAssignedReports = async (req, res, next) => {
+  try {
+    // Role-based access control
+    if (req.user.role === 'citizen' || req.user.role === 'staff') {
+      return res.status(403).json({
+        status: "fail",
+        message: "You are not allowed to view unassigned reports.",
+      });
+    }
+
+    const reports = await Report.find({ isAssigned: false });
+
+    res.status(200).json({
+      status: "success",
+      data: reports,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllStaff = async (req, res, next) => {
+    try {
+      const { id }= req.params;
+      const departments = await Report.findById(id).select('departments');
+      if (!departments) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'No departments found for this report'
+        });
+      }
+      const staffs = await User.find({
+        role: 'staff',
+        departments: { $in: departments.departments }
+      }).select('-password').select('-otp').select('-otpExpiry').select('-reportsForVerification').select('-createdAt').select('-updatedAt').select('-__v').select('-isVerified');
+  
+      if (staffs.length === 0) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'No staff found for the report departments'
+        });
+      }
+  
+      res.status(200).json({
+        status: 'success',
+        data: staffs
+      });
+    } catch (error) {
+      next(error);
+    }
+}
+
 // export const deleteReport = async (req, res, next) => {
 //     try {
 //         const { id } = req.params;

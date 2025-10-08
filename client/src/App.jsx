@@ -10,8 +10,9 @@ import "./App.css";
 import { AuthProvider } from "./context/authContext.jsx";
 import ProtectedRoute from "./components/protectedRoutes.jsx";
 import DepartmentalReport from "./components/departmentalReport.jsx";
-import VerifyReportStatus from "./components/verifyReportStatus.jsx";
 import ReportVerificationPage from "./components/reportVerification.jsx";
+import UnassignedReportsPage from "./components/UnAssignedReports.jsx";
+import StaffList from "./components/StaffList.jsx";
 
 const appRouter = createBrowserRouter([
   {
@@ -51,12 +52,16 @@ const appRouter = createBrowserRouter([
         element: <DepartmentalReport />,
       },
       {
-        path: "/verifyReportStatus",
-        element: <VerifyReportStatus />
-      },
-      {
         path: "/notifications",
         element: <ReportVerificationPage />
+      },
+      {
+        path: "/unAssignedReports",
+        element: <UnassignedReportsPage />
+      },
+      {
+        path: "/staffList",
+        element: <StaffList />
       }
     ],
   },
