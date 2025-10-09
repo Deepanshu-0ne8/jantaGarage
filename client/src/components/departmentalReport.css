@@ -1,13 +1,13 @@
 :root {
---primary-color: #3b82f6; /* Blue - Actions/Links /
---accent-color: #10b981; / Green - Success/Resolved /
+--primary-color: #3b82f6; 
+--accent-color: #10b981; 
 --text-color-dark: #1f2937;
 --text-color-light: #4b5563;
 --bg-color: #f4f7f6;
 --card-bg: #ffffff;
 --border-radius: 10px;
---danger-color: #ef4444; / High Severity/Close /
---warning-color: #f59e0b; / Open/Medium Severity */
+--danger-color: #ef4444; 
+--warning-color: #f59e0b; 
 }
 
 body {

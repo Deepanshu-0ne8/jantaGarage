@@ -15,8 +15,8 @@ userRouter.get('/departmentalReport', authorize, getdepartmentalReport);
 
 userRouter.get('/reportForVerification', authorize, getReportsForVerification);
 
-userRouter.delete('/assignReport/:userId/:reportId', authorize, assignReportToStaff);
+userRouter.patch('/assignReport', authorize, assignReportToStaff);
 
-userRouter.post('/assignedReports', authorize, getAssignedReports);
+userRouter.get('/assignedReports', authorize, getAssignedReports);
 
 export default userRouter;

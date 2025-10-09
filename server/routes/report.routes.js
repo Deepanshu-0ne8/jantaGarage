@@ -1,6 +1,6 @@
 import express from 'express';
 import { authorize } from '../middlewares/auth.middleware.js';
-import { createReport, getAllReports, getAllStaff, getAllUnAssignedReports, getReportById, getReportsByUserId, updateReportStatusTOInProgress, updateReportStatusTOResolvedNotifiction } from '../controllers/report.controllers.js';
+import { createReport, getAllReports, getAllStaff, getAllUnAssignedReports, getReportById, getReportsByUserId, rejectResolution, updateReportStatusTOInProgress, updateReportStatusToResolved, updateReportStatusTOResolvedNotifiction } from '../controllers/report.controllers.js';
 import { upload } from '../middlewares/multer.middleware.js';
 
 const reportRouter = express.Router();
@@ -24,6 +24,10 @@ reportRouter.put('/resolve/:id', authorize, updateReportStatusTOResolvedNotifict
 reportRouter.get('/unAssigned', authorize, getAllUnAssignedReports);
 
 reportRouter.get('/getAllStaff/:id', authorize, getAllStaff);
+
+reportRouter.patch('/toResolved/:id', authorize, updateReportStatusToResolved);
+
+reportRouter.patch('/reject/:id', authorize, rejectResolution);
 
 
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import { getAllEligibleStaff } from '../services/reportService';
+import { assignReportToStaff } from '../services/UserServices';
 import Navbar from './navbar';
 import './StaffList.css';
 import Modal from 'react-modal';
@@ -13,15 +14,27 @@ const useQuery = () => {
   return new URLSearchParams(useLocation().search);
 };
 
-// --- Staff Detail Modal ---
-const StaffDetailModal = ({ staff, onClose, onAssign, isAssignmentLoading }) => {
+// --- Avatar Helper Component ---
+const StaffAvatar = ({ staff, isDetail = false }) => {
+    const sizeClass = isDetail ? 'detail-avatar' : 'initial-avatar';
+    const initial = staff.name ? staff.name[0].toUpperCase() : staff.userName[0].toUpperCase();
     
-    // Non-sensitive fields displayed
+    if (staff.displayPic?.url) {
+        return <img src={staff.displayPic.url} alt={staff.name || staff.userName} className={`staff-avatar-img ${sizeClass}`} />;
+    }
+    
+    return <div className={`staff-avatar-initial ${sizeClass}`}>{initial}</div>;
+};
+
+
+// --- Staff Detail Modal ---
+const StaffDetailModal = ({ staff, onClose, onAssign, isAssignmentLoading, currentReportId }) => {
+    
     const relevantFields = [
         { label: "Role", value: staff.role.toUpperCase() },
         { label: "Email", value: staff.email },
         { label: "Contact", value: staff.contact || 'N/A' },
-        { label: "Total Assigned Reports", value: staff.reportsAssignedCount }, // Use the calculated count
+        { label: "Total Assigned Reports", value: staff.reportsAssignedCount },
         { label: "Departments", value: staff.departments.join(', ') },
     ];
     
@@ -35,7 +48,7 @@ const StaffDetailModal = ({ staff, onClose, onAssign, isAssignmentLoading }) => 
             <div className="staff-detail-popup">
                 <button className="modal-close-btn" onClick={onClose}>&times;</button>
                 <div className="staff-detail-header">
-                    <div className="staff-detail-avatar">{staff.name ? staff.name[0].toUpperCase() : staff.userName[0].toUpperCase()}</div>
+                    <StaffAvatar staff={staff} isDetail={true} />
                     <h2 className="staff-detail-name">{staff.name || staff.userName}</h2>
                 </div>
                 
@@ -49,7 +62,7 @@ const StaffDetailModal = ({ staff, onClose, onAssign, isAssignmentLoading }) => 
 
                 <button 
                     className="assign-button modal-assign-button" 
-                    onClick={() => onAssign(staff)}
+                    onClick={() => onAssign(staff.id, currentReportId, staff.name)}
                     disabled={isAssignmentLoading}
                 >
                     {isAssignmentLoading ? 'Assigning...' : `Assign Report Now`} 
@@ -64,7 +77,7 @@ const StaffDetailModal = ({ staff, onClose, onAssign, isAssignmentLoading }) => 
 const StaffItem = ({ staff, onCardClick }) => (
     <div className="staff-card" onClick={() => onCardClick(staff)}>
         <div className="staff-info">
-            <div className="staff-avatar-initial">{staff.name ? staff.name[0].toUpperCase() : staff.userName[0].toUpperCase()}</div>
+            <StaffAvatar staff={staff} isDetail={false} />
             <div className="staff-details">
                 <h3 className="staff-name">{staff.name || staff.userName}</h3>
                 <p className="staff-email">{staff.email}</p>
@@ -90,7 +103,7 @@ const StaffList = () => {
     const reportId = query.get('reportId');
 
     const [staffs, setStaffs] = useState([]);
-    const [selectedStaff, setSelectedStaff] = useState(null); // New state for modal data
+    const [selectedStaff, setSelectedStaff] = useState(null); 
     const [reportDepartments, setReportDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -101,14 +114,13 @@ const StaffList = () => {
 
     // --- SORTING LOGIC ---
     const sortStaffsByWorkload = (staffs) => {
-        // Sorts staff by the length of their reportsForVerification array (least assigned first)
         return staffs.sort((a, b) => {
             const countA = a.reportsForVerification?.length || 0;
             const countB = b.reportsForVerification?.length || 0;
-            return countA - countB; // Ascending order (least reports first)
+            return countA - countB; 
         }).map(s => ({
             ...s,
-            // Attach the count for easy display in the UI components
+            id: s._id,
             reportsAssignedCount: s.reportsForVerification?.length || 0
         }));
     };
@@ -123,13 +135,11 @@ const StaffList = () => {
             setLoading(true);
             const fetchedStaff = await getAllEligibleStaff(reportId);
             
-            // Apply sorting by workload
             const sortedStaff = sortStaffsByWorkload(fetchedStaff);
 
             setStaffs(sortedStaff);
             
             if (sortedStaff.length > 0) {
-                // Determine the unique departments for context display
                 const allDepts = new Set(sortedStaff.flatMap(s => s.departments));
                 setReportDepartments(Array.from(allDepts));
             }
@@ -153,11 +163,8 @@ const StaffList = () => {
     }, [user, authLoading, isAuthorized, reportId, fetchStaff, navigate]);
     
     
-    const handleAssignStaff = async (staff) => {
-        // We call the server to assign the report. 
-        // NOTE: A new API function (e.g., assignReport) is needed here.
-        
-        if (!window.confirm(`Confirm assigning report #${reportId.substring(0, 8)} to ${staff.name}?`)) {
+    const handleAssignStaff = async (staffId, currentReportId, staffName) => {
+        if (!window.confirm(`Confirm assigning report #${currentReportId.substring(0, 8)} to ${staffName}?`)) {
             return;
         }
         
@@ -165,20 +172,17 @@ const StaffList = () => {
         setAssignmentStatus(null);
         
         try {
-            // TODO: Implement actual assignment API call here
-            // Example: await assignReport(reportId, staff._id); 
+            const response = await assignReportToStaff(staffId, currentReportId); 
             
-            console.log(`Report ${reportId} assigned to ${staff._id}.`);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Mock API delay
+            setAssignmentStatus({ type: 'success', message: response.message || `Successfully assigned report to ${staffName}.` });
+            setSelectedStaff(null); 
             
-            setAssignmentStatus({ type: 'success', message: `Successfully assigned report to ${staff.name}.` });
-            setSelectedStaff(null); // Close modal
-            
-            // Redirect back to unassigned list after successful assignment
             setTimeout(() => navigate('/unAssignedReports'), 1500); 
 
         } catch (error) {
-            setAssignmentStatus({ type: 'error', message: 'Assignment failed due to server error.' });
+            console.error("Assignment Failed:", error);
+            const errMsg = error.message || 'Assignment failed due to server error.';
+            setAssignmentStatus({ type: 'error', message: errMsg });
         } finally {
             setIsAssignmentLoading(false);
         }
@@ -233,7 +237,7 @@ const StaffList = () => {
                             <StaffItem 
                                 key={staff._id} 
                                 staff={staff} 
-                                onCardClick={setSelectedStaff} // Open modal on card click
+                                onCardClick={setSelectedStaff} 
                             />
                         ))}
                     </div>
@@ -248,6 +252,7 @@ const StaffList = () => {
                 {selectedStaff && (
                     <StaffDetailModal 
                         staff={selectedStaff}
+                        currentReportId={reportId}
                         onClose={() => setSelectedStaff(null)}
                         onAssign={handleAssignStaff}
                         isAssignmentLoading={isAssignmentLoading}

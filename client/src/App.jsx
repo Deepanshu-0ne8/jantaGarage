@@ -13,6 +13,7 @@ import DepartmentalReport from "./components/departmentalReport.jsx";
 import ReportVerificationPage from "./components/reportVerification.jsx";
 import UnassignedReportsPage from "./components/UnAssignedReports.jsx";
 import StaffList from "./components/StaffList.jsx";
+import AssignedReports from "./components/assignedReports.jsx";
 
 const appRouter = createBrowserRouter([
   {
@@ -62,6 +63,10 @@ const appRouter = createBrowserRouter([
       {
         path: "/staffList",
         element: <StaffList />
+      },
+      {
+        path: "/assignedReports",
+        element: <AssignedReports />
       }
     ],
   },

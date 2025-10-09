@@ -60,6 +60,7 @@ const ActiveReportCard = ({ report, onClick }) => {
   );
 };
 
+// NOTE: This utility function is assumed to be defined elsewhere (e.g., in ReportService or similar)
 const fetchUnassignedCount = async () => {
     try {
         const res = await api.get("/reports/unAssigned", { withCredentials: true });
@@ -78,7 +79,7 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [globalUnassignedCount, setGlobalUnassignedCount] = useState(0); // NEW STATE FOR ADMIN COUNT
+  const [globalUnassignedCount, setGlobalUnassignedCount] = useState(0); 
 
   const openPopup = () => setIsPopupOpen(true);
   const closePopup = () => setIsPopupOpen(false);
@@ -122,9 +123,11 @@ const Home = () => {
     if (user) {
       fetchUserReports();
       if (user.role === 'admin') {
+          // Fetch global count only for Admin
           fetchUnassignedCount().then(setGlobalUnassignedCount);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handleReportCreated = (newReport) => {
@@ -132,6 +135,8 @@ const Home = () => {
   };
 
   const isAdmin = user?.role === "admin";
+  const isStaff = user?.role === "staff"; // CRITICAL: Check for Staff role specifically
+  const unassignedCount = globalUnassignedCount;
 
   return (
     <div className="home-container">
@@ -143,17 +148,29 @@ const Home = () => {
 
         {/* --- ACTION BLOCK --- */}
         <div className="action-block-wrapper">
+          
+          {/* 1. PRIMARY ACTION: CREATE REPORT (ALL USERS) */}
           <button className="open-report-btn action-card primary-action" onClick={openPopup}>
             <i className="fas fa-bullhorn" aria-hidden="true"></i>
             <span className="action-title">Create New Report</span>
             <span className="action-desc">File a complaint about a public issue in your area.</span>
           </button>
 
+          {/* 2. STAFF ACTION: VIEW ASSIGNED REPORTS (STAFF ONLY) */}
+          {isStaff && (
+            <Link to="/assignedReports" className="staff-action-btn action-card secondary-action">
+              <i className="fas fa-clipboard-check" aria-hidden="true"></i>
+              <span className="action-title">Review Assigned Reports</span>
+              <span className="action-desc">Manage issues assigned to your department(s).</span>
+            </Link>
+          )}
+
+          {/* 3. ADMIN ACTION: VIEW UNASSIGNED REPORTS (ADMIN ONLY) */}
           {isAdmin && (
             <Link to="/unAssignedReports" className="admin-action-btn action-card secondary-action">
               <i className="fas fa-clipboard-list" aria-hidden="true"></i>
               <span className="action-title">Review Unassigned Reports</span>
-              <span className="action-desc">{globalUnassignedCount} reports awaiting assignment.</span> {/* FIX: Use globalUnassignedCount */}
+              <span className="action-desc">{unassignedCount} reports awaiting assignment.</span>
             </Link>
           )}
         </div>
@@ -213,7 +230,7 @@ const Home = () => {
 
                         <p className="modal-detail">
                             <strong>Severity:</strong>{" "}
-                            <span className={`severity severity-${(selectedReport.severity || "").toLowerCase()}`}>
+                            <span className={`severity ${(selectedReport.severity || "low").toLowerCase()}`}>
                                 {labelize(selectedReport.severity)}
                             </span>
                         </p>
