@@ -1,8 +1,8 @@
 /* src/components/UnassignedReportPage.css */
 
 :root {
---primary-color: #3b82f6; /* Blue /
---accent-color: #10b981; / Green */
+--primary-color: #3b82f6;
+--accent-color: #10b981;
 --text-color-dark: #1f2937;
 --text-color-light: #4b5563;
 --bg-color: #f4f7f6;
@@ -10,7 +10,7 @@
 --border-radius: 10px;
 
 /* Status Colors */
---status-unassigned: #ef4444; /* Red, indicating priority action needed */
+--status-unassigned: #ef4444;
 
 /* Severity Colors */
 --severity-low: #3b82f6;
@@ -18,19 +18,11 @@
 --severity-high: #ef4444;
 
 --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
-
+--modal-bg: #fff;
 }
 
 body {
 background-color: var(--bg-color);
-}
-
-.report-page-container {
-max-width: 1000px;
-margin: 20px auto;
-padding: 20px;
-border-radius: var(--border-radius);
-text-align: center;
 }
 
 .report-page-wrapper {
@@ -58,6 +50,14 @@ color: var(--status-unassigned);
 font-weight: 600;
 }
 
+/* Access Denied */
+.report-page-container {
+max-width: 1000px;
+margin: 20px auto;
+padding: 20px;
+border-radius: var(--border-radius);
+text-align: center;
+}
 .access-denied h2 {
 color: var(--status-unassigned);
 }
@@ -78,7 +78,6 @@ overflow: hidden;
 border: 1px solid #e5e7eb;
 }
 .unassigned-card {
-/* Highlight the card with a strong border */
 border-left: 5px solid var(--status-unassigned);
 }
 
@@ -88,9 +87,10 @@ justify-content: space-between;
 align-items: center;
 padding: 15px 20px;
 cursor: pointer;
+background-color: #fffdfd;
 }
 .report-summary:hover {
-background-color: #fffafa; /* Light red hover */
+background-color: #fffafa;
 }
 
 .report-id {
@@ -146,11 +146,12 @@ color: var(--text-color-light);
 transform: rotate(90deg);
 }
 
-/* --- Details Section --- */
+/* --- Details --- */
 .report-details {
-padding: 15px 20px 20px 20px;
+padding: 20px;
 background-color: #f9f9f9;
 border-top: 1px solid #e5e7eb;
+border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
 
 .details-grid {
@@ -166,9 +167,6 @@ font-size: 0.95rem;
 display: flex;
 flex-wrap: wrap;
 }
-.detail-field.half-width {
-grid-column: span 1;
-}
 .detail-field.full-width {
 grid-column: span 2;
 }
@@ -176,9 +174,7 @@ grid-column: span 2;
 .detail-label {
 font-weight: 600;
 color: var(--text-color-light);
-min-width: 120px;
 margin-right: 10px;
-flex-shrink: 0;
 }
 
 .department-tags {
@@ -196,26 +192,63 @@ font-size: 0.7rem;
 font-weight: 500;
 }
 
+.map-link {
+color: var(--primary-color);
+text-decoration: none;
+font-weight: 600;
+display: inline-flex;
+align-items: center;
+gap: 5px;
+transition: color 0.2s;
+}
+.map-link i {
+font-size: 0.8rem;
+}
+
 /* --- Actions --- */
-.report-actions {
+.reportActions {
+display: flex;
+justify-content: flex-start;
+align-items: center;
+gap: 15px;
 margin-top: 15px;
 padding-top: 15px;
 border-top: 1px dashed #e5e7eb;
 }
 
-.assign-button {
+.actionButton {
+border: none;
+padding: 10px 18px;
+border-radius: 8px;
+font-size: 0.95rem;
+font-weight: 600;
+display: inline-flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+cursor: pointer;
+transition: background-color 0.2s, transform 0.2s;
+text-decoration: none;
+flex-shrink: 0;
+}
+
+.view-image-button {
+background-color: #a0a0a0;
+color: white;
+box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+.view-image-button:hover {
+background-color: #888;
+}
+
+.assignButton {
 background-color: var(--status-unassigned);
 color: white;
-border: none;
-padding: 10px 20px;
-border-radius: 6px;
-font-size: 1rem;
-font-weight: 600;
-cursor: pointer;
-transition: background-color 0.2s;
+box-shadow: 0 2px 5px rgba(239, 68, 68, 0.3);
 }
-.assign-button:hover {
+.assignButton:hover {
 background-color: #d83b3b;
+transform: translateY(-1px);
 }
 
 /* --- State Messages --- */
@@ -237,11 +270,70 @@ color: var(--primary-color);
 margin-bottom: 15px;
 }
 
-/* --- Responsiveness --- */
-@media (max-width: 768px) {
-.report-page-wrapper {
-padding: 10px;
+/* --- ATTACHMENT MODAL STYLES --- */
+.modal-backdrop {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.85);
+display: flex;
+justify-content: center;
+align-items: center;
+z-index: 10000;
 }
+
+.attachment-modal {
+background: var(--modal-bg);
+border-radius: var(--border-radius);
+padding: 20px;
+width: 80%;
+max-width: 80vw;
+max-height: 90vh;
+overflow-y: auto;
+position: relative;
+box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.attachment-modal h3 {
+color: var(--primary-color);
+margin-top: 0;
+padding-bottom: 10px;
+border-bottom: 1px solid #eee;
+}
+
+.attachment-viewer {
+text-align: center;
+margin-top: 15px;
+}
+
+.attachment-image {
+max-width: 100%;
+height: auto;
+display: block;
+margin: 0 auto;
+border-radius: 6px;
+border: 1px solid #ddd;
+}
+
+.modal-close-btn {
+position: absolute;
+top: 10px;
+right: 10px;
+background: var(--status-unassigned);
+color: white;
+border: none;
+border-radius: 50%;
+width: 30px;
+height: 30px;
+font-size: 1.2rem;
+cursor: pointer;
+line-height: 1;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
 .details-grid {
 grid-template-columns: 1fr;
 gap: 10px;
@@ -251,7 +343,8 @@ margin-top: 10px;
 width: 100%;
 justify-content: space-between;
 }
-.assign-button {
-width: 100%;
+.reportActions {
+flex-direction: column;
+align-items: stretch;
 }
 }

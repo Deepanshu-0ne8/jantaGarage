@@ -1,5 +1,5 @@
 import { assign } from "nodemailer/lib/shared/index.js";
-import { DEFAULT_DP } from "../config/env.js";
+import { APP_PASS, DEFAULT_DP } from "../config/env.js";
 import Report from "../models/report.model.js";
 import User, { departmentList } from "../models/user.model.js";
 import { extractPublicId, uploadDpOnCloudinary } from "../utils/cloudinary.js";
@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: 'patidardeepanshu910@gmail.com',
-        pass: 'dosv rzwn tchz kifx'
+        pass: APP_PASS
     }
 });
 
@@ -318,6 +318,13 @@ export const assignReportToStaff = async (req, res, next) => {
 
       staff.reportsAssigned.push(report._id);
       await staff.save();
+
+      await transporter.sendMail({
+            from: 'patidardeepanshu910@gmail.com',
+            to: staff.email,
+            subject: 'New Report Assignment',
+            text: `You have been assigned a new report with the title: ${report.title}. Please check your dashboard for more details.`
+        });
 
       res.status(200).json({
         success: true,

@@ -82,3 +82,23 @@ export const getAllEligibleStaff = async (reportId) => {
         throw new Error(errorMessage);
     }
 };
+
+export const acceptResolution = async (reportId) => {
+    try {
+        const response = await api.patch(`/reports/toResolved/${reportId}`);
+        return response.data.message;
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || "Failed to accept resolution.";
+        throw new Error(errorMessage);
+    }
+};
+
+export const rejectResolution = async (reportId) => {
+    try {
+        const response = await api.patch(`/reports/reject/${reportId}`);
+        return response.data;
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || "Failed to reject resolution.";
+        throw new Error(errorMessage);
+    }
+};

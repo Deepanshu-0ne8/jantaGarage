@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/authContext';
-import { getDepartmentalReports, updateStatusToInProgress, updateStatusToResolvedNotification } from '../services/reportService'; 
+// Removed updateStatusToInProgress and updateStatusToResolvedNotification imports
+import { getDepartmentalReports } from '../services/reportService'; 
 import './departmentalReport.css';
 import Navbar from './navbar'; 
 
+// --- Attachment Modal Component (New) ---
 const AttachmentModal = ({ imageUrl, onClose }) => {
     return (
         <div className="modal-backdrop" onClick={onClose}>
@@ -13,9 +15,7 @@ const AttachmentModal = ({ imageUrl, onClose }) => {
                 
                 {imageUrl ? (
                     <div className="attachment-viewer">
-                        <div className="attachment-item">
-                            <img src={imageUrl} alt="Report Attachment" className="attachment-image" />
-                        </div>
+                        <img src={imageUrl} alt="Report Attachment" className="attachment-image" />
                     </div>
                 ) : (
                     <p className="no-attachments">No image was attached to this report.</p>
@@ -26,10 +26,12 @@ const AttachmentModal = ({ imageUrl, onClose }) => {
 };
 
 
-const ReportItem = ({ report, onReportStatusChange }) => {
+// Component to display a single report item
+const ReportItem = ({ report }) => { // Removed onReportStatusChange prop
     const [isOpen, setIsOpen] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false); // Only used for image modal
     
+    // --- Data Mapping based on Report Schema ---
     const reportDetails = {
         locationLink: report.location?.coordinates ? 
             `https://maps.google.com/?q=${report.location.coordinates[1]},${report.location.coordinates[0]}` : 
@@ -55,49 +57,6 @@ const ReportItem = ({ report, onReportStatusChange }) => {
 
     const attachmentCount = reportDetails.imageUrl ? 1 : 0;
     
-    const isProgressVisible = reportDetails.status === 'OPEN';
-    
-    const showResolveButton = reportDetails.status === 'IN_PROGRESS' && !reportDetails.isNotified;
-    
-    const showWaitingMessage = reportDetails.status === 'IN_PROGRESS' && reportDetails.isNotified;
-
-    
-    const handleMarkInProgress = async (e) => {
-        e.stopPropagation();
-        
-        if (!window.confirm(`Are you sure you want to mark report #${reportDetails.id.substring(0, 8)} as 'IN PROGRESS'?`)) {
-            return;
-        }
-
-        try {
-            await updateStatusToInProgress(reportDetails.id);
-            // Notify parent to refresh list as status has changed in DB
-            onReportStatusChange('success', `Report #${reportDetails.id.substring(0, 8)} marked IN PROGRESS.`);
-        } catch (error) {
-            console.error("Status Update Failed:", error);
-            onReportStatusChange('error', error.message || 'Failed to update status.');
-        }
-    };
-    
-    const handleNotifyCreator = async (e) => {
-        e.stopPropagation();
-        
-        if (!window.confirm(`Confirm resolution of report #${reportDetails.id.substring(0, 8)}? This will send a verification email to the creator.`)) {
-            return;
-        }
-
-        try {
-            const message = await updateStatusToResolvedNotification(reportDetails.id);
-            
-            onReportStatusChange('info', message); 
-            
-        } catch (error) {
-            console.error("Resolution Notification Failed:", error);
-            onReportStatusChange('error', error.message || 'Failed to send resolution notification.');
-        }
-    };
-
-
     return (
         <>
             <div className="report-card">
@@ -148,46 +107,17 @@ const ReportItem = ({ report, onReportStatusChange }) => {
                             </p>
                         </div>
 
-                        {/* Actions */}
+                        {/* Actions (Only View Image remains) */}
                         <div className="report-actions">
                             <button 
-                                className="action-button primary-action" 
+                                className="action-button primary-action view-image-button" 
                                 onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); }}
                                 disabled={!attachmentCount}
                             >
                                 <i className="fas fa-camera"></i> View Image ({attachmentCount})
                             </button>
                             
-                            {/* Mark In Progress Button (Only visible if OPEN) */}
-                            {isProgressVisible && (
-                                <button 
-                                    className="action-button secondary-action status-action-in-progress"
-                                    onClick={handleMarkInProgress} 
-                                >
-                                    Mark In Progress
-                                </button>
-                            )}
-                            
-                            {/* Resolution Button/Message */}
-                            {showResolveButton && (
-                                <button 
-                                    className="action-button secondary-action status-action-resolved"
-                                    onClick={handleNotifyCreator}
-                                >
-                                    Notify Creator for Resolution update
-                                </button>
-                            )}
-                            
-                            {showWaitingMessage && (
-                                <span className="resolution-waiting-message">
-                                    Notification sent. Awaiting creator verification...
-                                </span>
-                            )}
-                            
-                            {/* Re-open Button (If Resolved) - Placeholder action */}
-                            {(reportDetails.status === 'Resolved') && (
-                                <button className="action-button secondary-action status-action-reopen">Re-open</button>
-                            )}
+                            {/* ALL STATUS CHANGE BUTTONS/MESSAGES REMOVED */}
                         </div>
                     </div>
                 )}
@@ -210,7 +140,7 @@ const DepartmentalReport = () => {
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [statusMessage, setStatusMessage] = useState({ type: '', message: '' }); // For status updates
+    const [statusMessage, setStatusMessage] = useState({ type: '', message: '' }); // Retaining for error/fetch messages
 
     const isAuthorized = user?.role === 'staff' || user?.role === 'admin';
 
@@ -236,6 +166,7 @@ const DepartmentalReport = () => {
     }, [user, authLoading, isAuthorized, fetchReports]);
 
 
+    // Effect for status message timeout (Retained for displaying fetch/server errors)
     useEffect(() => {
         if (statusMessage.message) {
             const timer = setTimeout(() => setStatusMessage({ type: '', message: '' }), 4000);
@@ -244,13 +175,10 @@ const DepartmentalReport = () => {
     }, [statusMessage]);
 
 
+    // Simplified handler (no longer needs to refresh list based on action, only shows messages)
     const handleReportStatusChange = useCallback((type, message) => {
         setStatusMessage({ type, message });
-        
-        if (type === 'success' || type === 'info') { 
-             fetchReports();
-        }
-    }, [fetchReports]);
+    }, []);
 
 
     // --- Render Guards ---
@@ -301,8 +229,8 @@ const DepartmentalReport = () => {
                     <h1>Departmental Reports Dashboard</h1>
                     <p>
                         {user.role === 'admin' 
-                            ? 'Showing ALL reports in the system.' 
-                            : `Showing reports assigned to: **${user.departments?.join(', ') || 'N/A'}**`
+                            ? 'Showing ALL reports in the system (View Only).' 
+                            : `Showing reports assigned to: **${user.departments?.join(', ') || 'N/A'}** (View Only).`
                         }
                     </p>
                 </div>
@@ -312,7 +240,7 @@ const DepartmentalReport = () => {
                         <ReportItem 
                             key={report._id} 
                             report={report} 
-                            onReportStatusChange={handleReportStatusChange}
+                            onReportStatusChange={handleReportStatusChange} // Retained for showing fetch errors
                         />
                     ))}
                 </div>

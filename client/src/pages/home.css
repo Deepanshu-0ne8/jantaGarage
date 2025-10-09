@@ -10,11 +10,11 @@
 --shadow-light: 0 4px 10px rgba(0, 0, 0, 0.08);
 
 --severity-high-bg: #fee2e2;
---severity-high-text: #b91c1c;
+--severity-high-text: black;
 --severity-medium-bg: #fef3c7;
---severity-medium-text: #b45309;
+--severity-medium-text: #000000;
 --severity-low-bg: #dbeafe;
---severity-low-text: #1d4ed8;
+--severity-low-text: #000000;
 }
 
 .home-container {
@@ -192,17 +192,17 @@ font-weight: 600;
 text-transform: uppercase;
 }
 
-.severity-high {
+.high {
 background-color: var(--severity-high-bg);
 color: var(--severity-high-text);
 border: 1px solid var(--severity-high-bg);
 }
-.severity-medium {
+.medium {
 background-color: var(--severity-medium-bg);
 color: var(--severity-medium-text);
 border: 1px solid var(--severity-medium-bg);
 }
-.severity-low {
+.low {
 background-color: var(--severity-low-bg);
 color: var(--severity-low-text);
 border: 1px solid var(--severity-low-bg);

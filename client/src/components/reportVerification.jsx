@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/authContext';
-import { getReportsForVerification } from '../services/reportService';
-import './departmentalReport.css'; // Reusing the visual styles
+// Import new resolution APIs
+import { getReportsForVerification, acceptResolution, rejectResolution } from '../services/reportService'; 
+import './departmentalReport.css';
 import Navbar from './navbar'; 
 
 const AttachmentModal = ({ imageUrl, onClose }) => {
@@ -21,6 +22,16 @@ const AttachmentModal = ({ imageUrl, onClose }) => {
             </div>
         </div>
     );
+};
+
+const labelize = (raw) => {
+    if (!raw) return "";
+    return String(raw)
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
 };
 
 
@@ -49,19 +60,37 @@ const VerificationReportItem = ({ report, onResolutionAction }) => {
 
     const attachmentCount = reportDetails.imageUrl ? 1 : 0;
     
-    const handleAccept = (e) => {
+    // --- Handlers for Final Action ---
+    const handleAccept = async (e) => {
         e.stopPropagation();
-        if (window.confirm("Confirm resolution? This will close the report.")) {
+        if (!window.confirm("Confirm resolution? This will mark the report as RESOLVED and remove it from your queue.")) {
+            return;
+        }
 
-            onResolutionAction('success', reportDetails.id, 'accepted', `Report #${reportDetails.id.substring(0, 8)} successfully verified and closed.`);
+        try {
+            const response = await acceptResolution(reportDetails.id); // Call the PATCH /toResolved/:id endpoint
+            // Success: Remove item from queue and show message
+            onResolutionAction('success', reportDetails.id, response); // response.message is used
+        } catch (error) {
+            console.error("Accept Failed:", error);
+            onResolutionAction('error', reportDetails.id, error.message || 'Failed to verify resolution.');
         }
     };
 
-    const handleReject = (e) => {
+    const handleReject = async (e) => {
         e.stopPropagation();
-        if (window.confirm("Reject resolution? This will re-open the report.")) {
+        if (!window.confirm("Reject resolution? This will remove the report from your queue and notify staff to try again.")) {
+            return;
+        }
 
-            onResolutionAction('info', reportDetails.id, 'rejected', `Report #${reportDetails.id.substring(0, 8)} rejected. Status reverted to OPEN.`);
+        try {
+            const response = await rejectResolution(reportDetails.id); // Call the PATCH /reject/:id endpoint
+            // Success: Remove item from queue and show message
+            // Response object contains the message property
+            onResolutionAction('info', reportDetails.id, response.message); 
+        } catch (error) {
+            console.error("Reject Failed:", error);
+            onResolutionAction('error', reportDetails.id, error.message || 'Failed to reject resolution.');
         }
     };
 
@@ -165,6 +194,7 @@ const ReportVerificationPage = () => {
             const fetchedReports = await getReportsForVerification();
             setReports(fetchedReports);
         } catch (err) {
+            // Note: No reports found (404) also sets error, which is handled in the render block
             setError(err.message);
             setReports([]); 
         } finally {
@@ -189,9 +219,11 @@ const ReportVerificationPage = () => {
     }, [statusMessage]);
 
 
-    const handleResolutionAction = useCallback((type, reportId, action, message) => {
+    // Handler that removes the resolved/rejected report from the local list
+    const handleResolutionAction = useCallback((type, reportId, message) => {
         setStatusMessage({ type, message });
         
+        // Remove the report from the local state immediately
         setReports(prevReports => prevReports.filter(r => r._id !== reportId));
         
     }, []);

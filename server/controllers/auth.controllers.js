@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { JWT_EXPIRES_IN, JWT_SECRET } from "../config/env.js";
+import { APP_PASS, JWT_EXPIRES_IN, JWT_SECRET } from "../config/env.js";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 
@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: 'patidardeepanshu910@gmail.com',
-        pass: 'dosv rzwn tchz kifx'
+        pass: APP_PASS
     }
 });
 

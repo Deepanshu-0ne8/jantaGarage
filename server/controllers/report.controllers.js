@@ -1,3 +1,4 @@
+import { APP_PASS } from "../config/env.js";
 import Report from "../models/report.model.js";
 import User from "../models/user.model.js";
 import { uploadrepOnCloudinary } from "../utils/cloudinary.js";
@@ -7,7 +8,7 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: 'patidardeepanshu910@gmail.com',
-        pass: 'dosv rzwn tchz kifx'
+        pass: APP_PASS
     }
 });
 
@@ -296,6 +297,128 @@ export const getAllStaff = async (req, res, next) => {
       });
     } catch (error) {
       next(error);
+    }
+}
+
+export const updateReportStatusToResolved = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        const report = await Report.findById(id);
+        if (!report) {
+            return res.status(404).json({
+                status: 'fail',
+                message: 'Report not found'
+            });
+        }
+
+        if (report.status !== 'IN_PROGRESS') {
+            return res.status(400).json({
+                status: 'fail',
+                message: "Report must be in 'IN_PROGRESS' status to be resolved."
+            });
+        }
+
+        if( !report.isNotifiedTOResolved ) {
+            return res.status(400).json({
+                status: 'fail',
+                message: "Report creator has not been notified for verification yet."
+            });
+        }
+
+        if(report.createdBy.toString() !== req.id ) {
+            return res.status(403).json({
+                status: 'fail',
+                message: "You are not authorized to verify this report."
+            });
+        }
+
+        report.status = 'Resolved';
+        await report.save();
+
+        // Also remove the report from user's reportsForVerification array
+        await User.findByIdAndUpdate(report.createdBy, { $pull: { reportsForVerification: report._id } });
+
+        const staff = await User.findById(report.assignedTo);
+        
+        if(staff) {
+            await transporter.sendMail({
+            from: 'patidardeepanshu910@gmail.com',
+            to: staff.email,
+            subject: 'Problem Resolved verification done by Creator',
+            text: `The creator of the report with the title: ${report.title} has verified the resolution. Thank you for your efforts!`
+        });
+
+        }
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Report marked as resolved successfully',
+            data: report
+        });
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const rejectResolution = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const report = await Report.findById(id);
+      if (!report) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'Report not found'
+        });
+      }
+  
+      if (report.status !== 'IN_PROGRESS') {
+        return res.status(400).json({
+          status: 'fail',
+          message: "Report must be in 'IN_PROGRESS' status to reject the resolution."
+        });
+      }
+  
+      if( !report.isNotifiedTOResolved ) {
+        return res.status(400).json({
+          status: 'fail',
+          message: "Report creator has not been notified for verification yet."
+        });
+      }
+  
+      if(report.createdBy.toString() !== req.id ) {
+        return res.status(403).json({
+          status: 'fail',
+          message: "You are not authorized to reject the resolution of this report."
+        });
+      }
+  
+      // Reset notification flag to allow future notifications
+      report.isNotifiedTOResolved = false;
+      await report.save();
+  
+      // Also remove the report from user's reportsForVerification array
+      await User.findByIdAndUpdate(report.createdBy, { $pull: { reportsForVerification: report._id } });
+
+      const staff = await User.findById(report.assignedTo);
+        
+        if(staff) {
+          await transporter.sendMail({
+            from: 'patidardeepanshu910@gmail.com',
+            to: staff.email,
+            subject: 'Problem Resolved verification Rejected by Creator',
+            text: `The creator of the report with the title: ${report.title} has rejected the resolution. Please look into it again.`
+        });
+
+        }
+  
+      res.status(200).json({
+        status: 'success',
+        message: 'Report resolution rejected successfully. You can expect a new resolution soon.',
+        data: report
+      });
+    } catch (error) {
+      next(error)
     }
 }
 
