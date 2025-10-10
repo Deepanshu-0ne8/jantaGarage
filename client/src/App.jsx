@@ -14,6 +14,8 @@ import ReportVerificationPage from "./components/reportVerification.jsx";
 import UnassignedReportsPage from "./components/UnAssignedReports.jsx";
 import StaffList from "./components/StaffList.jsx";
 import AssignedReports from "./components/assignedReports.jsx";
+import HeatMap from "./components/HeatMap.jsx";
+import AdminAssignedReports from "./components/AdminAssignedReports.jsx";
 
 const appRouter = createBrowserRouter([
   {
@@ -67,6 +69,14 @@ const appRouter = createBrowserRouter([
       {
         path: "/assignedReports",
         element: <AssignedReports />
+      },
+      {
+        path: "/heatMap",
+        element: <HeatMap />
+      },
+      {
+        path: "/assignedByAdmin",
+        element: <AdminAssignedReports />
       }
     ],
   },

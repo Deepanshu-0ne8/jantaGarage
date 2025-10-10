@@ -83,10 +83,74 @@ const reportSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isOverdue: {
+      type: Boolean,
+      default: false,
+    },
+    isEscalated: {
+      type: Boolean,
+      default: false,
+    },
+ 
     assignedTo: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    }
+      name: {
+        type: String,
+        trim: true,
+      },
+      userName: {
+        type: String,
+        trim: true,
+      },
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        match: [
+          /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+          "Please fill a valid email address",
+        ],
+      },
+    },
+    assignedBy: {
+      name: {
+        type: String,
+        trim: true,
+      },
+      userName: {
+        type: String,
+        trim: true,
+      },
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        match: [
+          /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+          "Please fill a valid email address",
+        ],
+      },
+    },
+    resolutionComments: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    deadline: {
+      type: Date,
+      default: null,
+    },
+    resolvedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

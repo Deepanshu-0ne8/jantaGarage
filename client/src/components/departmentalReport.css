@@ -1,416 +1,434 @@
+/* --- Global Variables and Base Styles --- */
 :root {
---primary-color: #3b82f6; 
---accent-color: #10b981; 
---text-color-dark: #1f2937;
---text-color-light: #4b5563;
---bg-color: #f4f7f6;
---card-bg: #ffffff;
---border-radius: 10px;
---danger-color: #ef4444; 
---warning-color: #f59e0b; 
+    --primary-color: #3b82f6; /* Blue 500 */
+    --accent-color: #10b981;  /* Emerald 500 */
+    --danger-color: #ef4444;  /* Red 500 */
+    --warning-color: #f59e0b; /* Amber 500 */
+    --text-dark: #1f2937;     /* Gray 800 */
+    --text-light: #6b7280;    /* Gray 500 */
+    --bg-light: #f9fafb;      /* Gray 50 */
+    --card-bg: #ffffff;
+    --border-color: #e5e7eb;  /* Gray 200 */
+    --border-radius: 8px;
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+    /* Severity Colors */
+    --severity-high: var(--danger-color);
+    --severity-medium: var(--warning-color);
+    --severity-low: var(--primary-color);
+
+    /* Status Colors */
+    --status-open: var(--warning-color);
+    --status-in-progress: var(--primary-color);
+    --status-resolved: var(--accent-color);
+    --status-closed: var(--text-light);
+
+    /* Deadline Colors */
+    --deadline-overdue-bg: #fef2f2; /* Red 50 */
+    --deadline-overdue-text: #b91c1c; /* Red 700 */
+    --deadline-critical-bg: #fff7ed; /* Orange 50 */
+    --deadline-critical-text: #c2410c; /* Orange 700 */
+    --deadline-urgent-bg: #eff6ff; /* Blue 50 */
+    --deadline-urgent-text: #1e40af; /* Blue 700 */
+    --deadline-normal-bg: #f3f4f6; /* Gray 100 */
+    --deadline-normal-text: var(--text-dark);
+}
+
+/* --- Keyframe for Overdue Tag --- */
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
 }
 
 body {
-background-color: var(--bg-color);
+    background-color: var(--bg-light);
+    font-family: 'Inter', sans-serif;
+    color: var(--text-dark);
 }
 
-/* --- Page Containers --- */
-.report-page-container {
-max-width: 1000px;
-margin: 20px auto;
-padding: 20px;
-border-radius: var(--border-radius);
-text-align: center;
-}
-
+/* --- Base Layout & Header --- */
 .report-page-wrapper {
-max-width: 1000px;
-margin: 20px auto;
-padding: 20px;
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 0 20px;
 }
 
-/* --- Header --- */
 .report-page-header {
-margin-bottom: 30px;
-padding-bottom: 15px;
-border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 3px solid var(--primary-color);
+    text-align: center;
 }
-
 .report-page-header h1 {
-font-size: 2rem;
-color: var(--text-color-dark);
-margin-bottom: 5px;
+    font-size: 2.2rem;
+    color: var(--text-dark);
+    margin: 0 0 5px 0;
+    font-weight: 800;
 }
-
 .report-page-header p {
-font-size: 1rem;
-color: var(--text-color-light);
+    font-size: 1rem;
+    color: var(--text-light);
 }
 
-/* --- List Items --- */
+.report-page-container {
+    padding: 20px;
+    text-align: center;
+}
+
+/* --- Messages --- */
+.status-alert {
+    padding: 15px;
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+}
+.alert-success { background-color: #d4edda; color: var(--accent-color); }
+.alert-error { background-color: #f8d7da; color: var(--danger-color); }
+
+.no-reports-message, .loading-state, .access-denied {
+    padding: 40px;
+    margin: 30px auto;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    max-width: 600px;
+    text-align: center;
+}
+.no-reports-message i {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+.no-reports-message p {
+    color: var(--text-light);
+}
+
+/* --- Report List Container --- */
 .report-list {
-display: flex;
-flex-direction: column;
-gap: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding-bottom: 40px;
 }
 
+/* --- Report Card Item --- */
 .report-card {
-background-color: var(--card-bg);
-border-radius: var(--border-radius);
-box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-transition: transform 0.2s, box-shadow 0.2s;
-overflow: hidden;
-border: 1px solid #e5e7eb;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
 }
 
-.report-card:hover {
-box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+/* Overdue card visual highlight */
+.report-card.is-overdue {
+    border: 2px solid var(--deadline-overdue-text);
+    box-shadow: 0 0 10px rgba(185, 28, 28, 0.3);
 }
 
 .report-summary {
-display: flex;
-justify-content: space-between;
-align-items: center;
-padding: 15px 20px;
-cursor: pointer;
-border-bottom: 1px solid transparent;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
 }
 
 .report-summary:hover {
-background-color: #fcfcfc;
+    background-color: var(--bg-light);
 }
 
 .report-id-info {
-display: flex;
-flex-direction: column;
-flex-grow: 1;
+    /* Ensures ID and Title stack and align left */
+    display: flex;
+    flex-direction: column; 
+    justify-content: center;
+    align-items: flex-start; 
+    flex-grow: 1;
+    gap: 5px; 
+    text-align: left; 
 }
 
 .report-id {
-font-size: 0.8rem;
-color: var(--primary-color);
-font-weight: 600;
-margin-bottom: 2px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    background-color: #dbeafe; 
+    padding: 4px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    align-self: flex-start; 
 }
 
 .report-title {
-font-size: 1.1rem;
-font-weight: 600;
-color: var(--text-color-dark);
-margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-dark);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .report-meta {
-display: flex;
-align-items: center;
-gap: 20px;
-flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0; 
 }
 
-/* --- Status & Severity Badges --- */
-.report-status {
-padding: 4px 10px;
-border-radius: 20px;
-font-size: 0.75rem;
-font-weight: 700;
-color: white;
+/* --- Deadline/Severity/Status Chips in Summary --- */
+.report-status, .report-severity, .report-deadline, .deadline-tag {
+    padding: 5px 10px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-transform: uppercase;
 }
 
-/* Status Colors: Mapped to schema values */
-.status-open { background-color: var(--warning-color); }
-.status-in-progress { background-color: var(--primary-color); }
-.status-resolved { background-color: var(--accent-color); }
+/* Status Styling */
+.status-open { background-color: var(--status-open); color: var(--text-dark); }
+.status-in-progress { background-color: var(--status-in-progress); color: white; }
+.status-resolved, .status-closed { background-color: var(--status-resolved); color: white; }
 
-/* Severity Colors */
-.severity-high { color: var(--danger-color); font-weight: 700; }
-.severity-medium { color: var(--warning-color); font-weight: 700; }
-.severity-low { color: var(--accent-color); font-weight: 700; }
+/* Severity Styling (Used in expanded details) */
+.severity-high { color: var(--severity-high); }
+.severity-medium { color: var(--severity-medium); }
+.severity-low { color: var(--severity-low); }
 
-.report-date {
-font-size: 0.9rem;
-color: var(--text-color-light);
+/* Deadline Tag (OVERDUE card tag) */
+.deadline-tag.overdue-tag-card {
+    background-color: var(--deadline-overdue-text);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    animation: blink 1s infinite alternate;
+    text-transform: uppercase;
+    /* Resetting the border-radius from 50px defined above */
+    border-radius: 4px; 
+}
+
+/* Deadline Text Styling (Summary and Details) */
+.report-deadline, .deadline-text {
+    background-color: var(--deadline-normal-bg);
+    color: var(--deadline-normal-text);
+    text-transform: none; 
+}
+.deadline-overdue { 
+    background-color: var(--deadline-overdue-bg); 
+    color: var(--deadline-overdue-text);
+}
+.deadline-critical { 
+    background-color: var(--deadline-critical-bg); 
+    color: var(--deadline-critical-text);
+}
+.deadline-urgent { 
+    background-color: var(--deadline-urgent-bg); 
+    color: var(--deadline-urgent-text);
 }
 
 .chevron {
-transition: transform 0.3s;
-font-size: 0.8rem;
-color: var(--text-color-light);
+    color: var(--text-light);
+    transition: transform 0.2s;
+    margin-left: 5px;
 }
 
 .chevron.open {
-transform: rotate(90deg);
+    transform: rotate(90deg);
 }
 
-/* --- Details Section (Expanded) --- */
+/* --- Report Details (Collapsed) --- */
 .report-details {
-padding: 15px 20px 20px 20px;
-background-color: #f9f9f9;
-border-top: 1px solid #e5e7eb;
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
 }
 
 .details-grid {
-/* Uses grid for cleaner layout alignment */
-display: grid;
-grid-template-columns: repeat(2, 1fr);
-gap: 15px 20px;
-margin-bottom: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px; 
+    margin-bottom: 20px;
+    text-align: left;
 }
 
 .detail-field {
-margin: 0;
-font-size: 0.95rem;
-color: var(--text-color-dark);
-display: flex;
-flex-direction: row;
-align-items: flex-start;
-grid-column: span 1;
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+    display: flex;
+    flex-direction: column;
 }
 
-.detail-field.full-width { grid-column: 1 / -1; } /* Spans both columns */
+.half-width { 
+    flex: 1 1 calc(50% - 10px); 
+    min-width: 150px;
+}
+.full-width { flex: 1 1 100%; }
 
 .detail-label {
-font-weight: 600;
-color: var(--text-color-light);
-min-width: 120px;
-margin-right: 10px;
-flex-shrink: 0;
+    font-weight: 700;
+    color: var(--text-light);
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
 }
 
 .department-tags {
-display: flex;
-flex-wrap: wrap;
-gap: 8px;
-margin-top: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 5px;
 }
 
 .dept-tag {
-background-color: var(--primary-color);
-color: white;
-padding: 2px 8px;
-border-radius: 4px;
-font-size: 0.7rem;
-font-weight: 500;
-}
-
-.dept-tag-none {
-color: var(--text-color-light);
-font-style: italic;
-font-size: 0.8rem;
+    background-color: #e0f2fe; 
+    color: #1d4ed8; 
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
 }
 
 .map-link {
-color: var(--primary-color);
-text-decoration: none;
-font-weight: 500;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
 }
 
-.map-link:hover {
-text-decoration: underline;
-}
-
+/* --- Report Actions --- */
 .report-actions {
-margin-top: 15px;
-padding-top: 15px;
-border-top: 1px dashed #e5e7eb;
-display: flex;
-gap: 10px;
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
 }
 
 .action-button {
-padding: 10px 15px;
-border-radius: 6px;
-font-size: 0.9rem;
-font-weight: 600;
-cursor: pointer;
-transition: background-color 0.2s;
-display: flex;
-align-items: center;
-gap: 8px;
-}
-.action-button:disabled {
-opacity: 0.5;
-cursor: not-allowed;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none; 
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    border: none;
 }
 
-.primary-action {
-background-color: var(--primary-color);
-color: white;
-border: 1px solid var(--primary-color);
+.view-image-button {
+    background-color: var(--text-light);
+    color: white;
+}
+.view-image-button:hover:not(:disabled) {
+    background-color: #4b5563;
+}
+.view-image-button:disabled {
+    background-color: #d1d5db;
+    cursor: not-allowed;
 }
 
-.primary-action:hover:not(:disabled) {
-background-color: #2563eb;
-}
 
-.secondary-action {
-background-color: transparent;
-color: var(--primary-color);
-border: 1px solid var(--primary-color);
-}
-
-.secondary-action:hover:not(:disabled) {
-background-color: #e0f2fe;
-}
-
-/* --- State Messages & Errors --- */
-.loading-state, .error-state, .access-denied, .no-reports-message {
-padding: 40px;
-margin: 50px auto;
-background-color: var(--card-bg);
-border-radius: var(--border-radius);
-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-max-width: 600px;
-}
-
-.access-denied h2, .error-state h2 {
-color: var(--danger-color);
-}
-
-.no-reports-message {
-text-align: center;
-color: var(--text-color-light);
-font-size: 1.1rem;
-}
-
-.no-reports-message i {
-font-size: 3rem;
-color: #ccc;
-margin-bottom: 15px;
-}
-
-/* --- ATTACHMENT MODAL STYLES --- */
+/* --- Attachment Modal --- */
 .modal-backdrop {
-position: fixed;
-top: 0;
-left: 0;
-right: 0;
-bottom: 0;
-background-color: rgba(0, 0, 0, 0.9); /* Darker background for image modal */
-display: flex;
-justify-content: center;
-align-items: center;
-z-index: 2000;
-opacity: 0;
-animation: modalFadeIn 0.3s forwards;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
 
 .attachment-modal {
-background-color: #111; /* Dark background for modal content */
-border-radius: var(--border-radius);
-padding: 20px;
-width: 80vw;
-height: 80vh;
-box-shadow: 0 10px 20px rgba(0, 0, 0, 0.8);
-position: relative;
-overflow: hidden;
-display: flex;
-flex-direction: column;
-}
-.attachment-modal h3 {
-color: white;
-margin-bottom: 10px;
-border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-padding-bottom: 10px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    position: relative;
 }
 
 .modal-close-btn {
-position: absolute;
-top: 10px;
-right: 10px;
-background: none;
-border: none;
-font-size: 2rem;
-color: white; /* White close button */
-cursor: pointer;
-line-height: 1;
-z-index: 2001;
-text-shadow: 0 0 5px #000;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-light);
+    cursor: pointer;
 }
-
-.attachment-viewer {
-flex-grow: 1;
-display: flex;
-justify-content: center;
-align-items: center;
-overflow: hidden;
+.attachment-modal h3 {
+    margin-top: 0;
+    color: var(--primary-color);
 }
-
-.attachment-item {
-background-color: transparent;
-max-width: 100%;
-max-height: 100%;
-overflow: hidden;
-text-align: center;
-}
-
 .attachment-image {
-max-width: 100%;
-max-height: 100%;
-object-fit: contain; /* Important: Scale image down while preserving aspect ratio */
-display: block;
-}
-
-.no-attachments {
-text-align: center;
-color: var(--text-color-light);
-margin-top: 40px;
-}
-
-@keyframes modalFadeIn {
-from { opacity: 0; }
-to { opacity: 1; }
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
 }
 
 /* --- Responsiveness --- */
 @media (max-width: 768px) {
-.report-page-wrapper {
-padding: 10px;
-}
-.report-summary {
-flex-direction: column;
-align-items: flex-start;
-}
-.report-meta {
-margin-top: 10px;
-width: 100%;
-justify-content: space-between;
-}
-.report-id-info {
-width: 100%;
-margin-bottom: 5px;
-}
-.chevron {
-align-self: flex-start;
-order: -1;
-}
-.report-actions {
-flex-direction: column;
-}
-.action-button {
-width: 100%;
-}
+    .report-page-wrapper {
+        padding: 0 10px;
+    }
+    
+    .report-summary {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
 
-/* Mobile Fixes for Details Grid */
-.details-grid {
-    grid-template-columns: 1fr; /* Single column grid for details on mobile */
-    gap: 5px 0;
-}
-.detail-field {
-    grid-column: 1 / -1;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-}
-.detail-label {
-    min-width: auto;
-    margin-right: 0;
-}
+    .report-id-info {
+        width: 100%;
+    }
+    
+    .report-title {
+        white-space: normal;
+        line-height: 1.3;
+    }
 
-/* Modal for Mobile */
-.attachment-modal {
-    width: 95vw;
-    height: 95vh;
-    padding: 15px;
-}
+    .report-meta {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+    
+    .details-grid {
+        flex-direction: column;
+        gap: 15px;
+    }
 
+    .half-width { flex: 1 1 100%; }
+
+    .report-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .action-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .attachment-modal {
+        padding: 20px;
+    }
 }

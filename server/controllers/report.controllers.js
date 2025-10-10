@@ -16,13 +16,22 @@ export const createReport = async (req, res, next) => {
     try {
         // Check if an image was uploaded
         if (!req.file) {
-
+            
             const report = await Report.create({
             ...req.body,
             departments: JSON.parse(req.body.departments),
             location: JSON.parse(req.body.location), // Assuming location comes as a stringified JSON
             createdBy: req.id
         })
+        const createdAt = new Date(report.createdAt);
+        if(report.severity === 'High')
+        report.deadline = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
+        else if(report.severity === 'Medium')
+        report.deadline = new Date(createdAt.getTime() + 2 * 24 * 60 * 60 * 1000);
+        else
+        report.deadline = new Date(createdAt.getTime() + 3 * 24 * 60 * 60 * 1000);
+        await report.save();
+
           const admins = await User.find({ role: 'admin' });
 
         admins.forEach(async (element) => {
@@ -63,6 +72,15 @@ export const createReport = async (req, res, next) => {
             },
             createdBy: req.id
         })
+
+        const createdAt = new Date(report.createdAt);
+        if(report.severity === 'High')
+        report.deadline = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
+        else if(report.severity === 'Medium')
+        report.deadline = new Date(createdAt.getTime() + 2 * 24 * 60 * 60 * 1000);
+        else
+        report.deadline = new Date(createdAt.getTime() + 3 * 24 * 60 * 60 * 1000);
+        await report.save();
 
         const admins = await User.find({ role: 'admin' });        
         admins.forEach(async (element) => {
@@ -268,7 +286,6 @@ export const getAllUnAssignedReports = async (req, res, next) => {
     next(error);
   }
 };
-
 export const getAllStaff = async (req, res, next) => {
     try {
       const { id }= req.params;
@@ -279,21 +296,29 @@ export const getAllStaff = async (req, res, next) => {
           message: 'No departments found for this report'
         });
       }
+
       const staffs = await User.find({
         role: 'staff',
         departments: { $in: departments.departments }
-      }).select('-password').select('-otp').select('-otpExpiry').select('-reportsForVerification').select('-createdAt').select('-updatedAt').select('-__v').select('-isVerified');
+      }).select('-password').select('-otp').select('-otpExpiry').select('-reportsForVerification').select('-__v').select('-isVerified');
   
       if (staffs.length === 0) {
-        return res.status(404).json({
-          status: 'fail',
-          message: 'No staff found for the report departments'
+        return res.status(200).json({
+          status: 'success',
+          message: 'No staff found for the report departments',
+          data: {
+              staffs: [],
+              reportDepartments: departments.departments
+          }
         });
       }
   
       res.status(200).json({
         status: 'success',
-        data: staffs
+        data: {
+            staffs: staffs,
+            reportDepartments: departments.departments
+        }
       });
     } catch (error) {
       next(error);
@@ -422,6 +447,85 @@ export const rejectResolution = async (req, res, next) => {
     }
 }
 
+export const getAllAssignedReportsByAdmin = async (req, res, next) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({
+          status: "fail",
+          message: "You are not authorized to view assigned reports by admin.",
+        });
+      }
+
+      const reports = await Report.find({
+        isAssigned: true,
+        "assignedBy._id": req.user._id
+      });
+      if (reports.length === 0) {
+        return res.status(404).json({
+          status: "fail",
+          message: "No assigned reports found.",
+        });
+      }
+
+      res.status(200).json({
+        status: "success",
+        data: reports,
+      });
+    } catch (error) {
+      next(error);
+    }
+}
+
+export const notifyOnOverdueReports = async (req, res, next) => {
+    try {
+          const id = req.params;
+        const report = await Report.findById(id);
+        if (!report) {
+            return res.status(404).json({
+                status: 'fail',
+                message: 'Report not found'
+            });
+        }
+
+        if (report.status === 'Resolved') {
+            return res.status(400).json({
+                status: 'fail',
+                message: "Resolved reports cannot be overdue."
+            });
+        }
+
+        const nowTime = new Date().getTime();
+        const deadlineTime = new Date(report.deadline).getTime();
+        
+        if (nowTime <= deadlineTime) {
+            return res.status(400).json({
+                status: 'fail',
+                message: "Report is not overdue yet."
+            });
+        }
+        await transporter.sendMail({
+            from: 'patidardeepanshu910@gmail.com',
+            to: report.assignedTo.email,
+            subject: 'Report overdue notification',
+            text: `The report with the title: ${report.title} assigned to you is overdue. Please take immediate action to resolve it.`
+        });
+        
+        await transporter.sendMail({
+            from: 'patidardeepanshu910@gmail.com',
+            to: report.assignedBy.email,
+            subject: 'Problem Resolved verification Rejected by Creator',
+            text: `The creator of the report with the title: ${report.title} has rejected the resolution. Please look into it again.`
+        });
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Overdue notification sent successfully',
+        });
+  }
+catch (error) {
+        next(error);
+    }
+}
 // export const deleteReport = async (req, res, next) => {
 //     try {
 //         const { id } = req.params;

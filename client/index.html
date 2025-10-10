@@ -1,13 +1,34 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>client</title>
+    <title>Janta Garage App</title>
+
+    <!-- MAP DEPENDENCIES (CSS) -->
+    <!-- 1. Core Leaflet Map Styling -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    
+    <!-- 2. Leaflet Marker Cluster Styling -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    
+    <!-- 3. FONT AWESOME ICONS (Required for map markers and UI icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
   </head>
   <body>
     <div id="root"></div>
+    
+    <!-- Your main application entry point -->
     <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- MAP DEPENDENCIES (JAVASCRIPT) - Must load before your application initializes the map -->
+    <!-- 1. Core Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    
+    <!-- 2. Leaflet Marker Cluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    
   </body>
 </html>

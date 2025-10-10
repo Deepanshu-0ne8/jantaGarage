@@ -34,6 +34,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "username is required"],
       trim: true,
+      unique: true,
       minlength: [2, "user name must be at least 3 characters"],
       maxlength: [100, "user name must be at most 100 characters"],
     },
@@ -92,6 +93,14 @@ const userSchema = new mongoose.Schema(
       type: [mongoose.Schema.Types.ObjectId],
       ref: "Report",
       default: []
+    },
+    countAssignedReports: {
+      type: Number,
+      default: 0
+    },
+    countResolvedReports: {
+      type: Number,
+      default: 0
     },
     departments: {
       type: [String],

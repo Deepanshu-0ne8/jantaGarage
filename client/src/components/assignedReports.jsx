@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/authContext';
 import { getAssignedReportsForStaff } from '../services/UserServices';
 import { updateStatusToInProgress, updateStatusToResolvedNotification } from '../services/reportService';
@@ -25,7 +25,29 @@ const labelize = (raw) => {
     .join(" ");
 };
 
-// --- Report Detail Modal (Unchanged Logic) ---
+// Helper to determine deadline chip class based on remaining days/time
+const getDeadlineClass = (deadlineDate, status) => {
+    if (status === 'Resolved' || status === 'CLOSED') {
+        return ''; // Don't show urgency for resolved reports
+    }
+
+    if (!deadlineDate) return 'deadline-none';
+
+    const nowTime = new Date().getTime();
+    const deadlineTime = new Date(deadlineDate).getTime();
+    
+    // Check for Overdue status using full timestamp
+    if (nowTime > deadlineTime) return 'deadline-overdue';
+
+    const msInDay = 1000 * 60 * 60 * 24;
+    const diffDays = (deadlineTime - nowTime) / msInDay;
+
+    if (diffDays <= 1) return 'deadline-critical'; // Less than or equal to 1 day remaining
+    if (diffDays <= 3) return 'deadline-urgent';   // Less than or equal to 3 days remaining
+    return 'deadline-normal';
+};
+
+// --- Report Detail Modal ---
 const ReportDetailModal = ({ report, onClose, onStatusChange }) => {
     
     // Data preparation
@@ -38,6 +60,10 @@ const ReportDetailModal = ({ report, onClose, onStatusChange }) => {
     const isProgressVisible = report.status === 'OPEN';
     const isResolveVisible = report.status === 'IN_PROGRESS' && !report.isNotifiedTOResolved;
     const showWaitingMessage = report.status === 'IN_PROGRESS' && report.isNotifiedTOResolved;
+
+    // Deadline formatting and classification - Using toLocaleString for full date/time precision
+    const formattedDeadline = report.deadline ? new Date(report.deadline).toLocaleString() : 'N/A';
+    const deadlineClass = getDeadlineClass(report.deadline, report.status);
 
     // --- Handlers ---
     
@@ -76,7 +102,7 @@ const ReportDetailModal = ({ report, onClose, onStatusChange }) => {
             overlayClassName="report-overlay"
         >
             <div className="report-popup">
-                <button className="modal-close-btn" onClick={onClose}>&times;</button>
+                <button className="modal-close-btn" onClick={onClose}>×</button>
                 <h2 className="modal-title">{report.title}</h2>
                 
                 {report.image?.url && <img src={report.image.url} alt="Report Image" className="modal-img" />}
@@ -94,6 +120,15 @@ const ReportDetailModal = ({ report, onClose, onStatusChange }) => {
                             {labelize(report.severity)}
                         </span>
                     </p>
+                    
+                    {/* NEW: Deadline Detail */}
+                    <p className="modal-detail">
+                        <strong>Deadline:</strong>{" "}
+                        <span className={`deadline-chip ${deadlineClass}`}>
+                            {formattedDeadline}
+                        </span>
+                    </p>
+                    
                     <p className="modal-detail full-row">
                         <strong>Filed On:</strong> {new Date(report.createdAt).toLocaleString()}
                     </p>
@@ -153,15 +188,20 @@ const ReportDetailModal = ({ report, onClose, onStatusChange }) => {
     );
 };
 
-// --- Report Card Component (Unchanged) ---
+// --- Report Card Component ---
 const AssignedReportCard = ({ report, onClick }) => {
     const statusClass = (report.status || 'Pending').toLowerCase().replace(/_/g, '-');
     const severityClass = (report.severity || 'Low').toLowerCase();
     const reportDate = new Date(report.createdAt).toLocaleDateString('en-GB');
 
+    // NEW: Deadline calculation for card styling
+    const deadlineClass = getDeadlineClass(report.deadline, report.status);
+    const deadlineText = report.deadline ? new Date(report.deadline).toLocaleDateString('en-GB') : 'N/A';
+    const isOverdue = deadlineClass === 'deadline-overdue';
+
     return (
         <div 
-            className={`report-card-item status-${statusClass}`} 
+            className={`report-card-item status-${statusClass} ${deadlineClass} ${isOverdue ? 'is-overdue' : ''}`} 
             onClick={() => onClick(report)}
             role="button"
             tabIndex={0}
@@ -181,7 +221,17 @@ const AssignedReportCard = ({ report, onClick }) => {
                     <span className={`status-badge status-${statusClass}`}>
                         {labelize(report.status)}
                     </span>
-                    <span className={`severity-chip severity-${severityClass}`}>
+
+                    {/* NEW: Overdue Tag inside card */}
+                    {isOverdue && (
+                        <span className="deadline-tag overdue-tag-card">OVERDUE</span>
+                    )}
+                    
+                    {/* NEW: Deadline Chip in Card */}
+                    <span className={`deadline-chip-card ${deadlineClass}`}>
+                        Due: {deadlineText}
+                    </span>
+                    <span className={`severity-chip severity-${severityClass} card-severity-chip`}>
                         {labelize(report.severity)}
                     </span>
                 </div>
@@ -194,13 +244,14 @@ const AssignedReportCard = ({ report, onClick }) => {
 // --- Main Component ---
 const AssignedReports = () => {
     const { user, loading: authLoading } = useAuth();
-    // Replaced [reports, setReports] with activeReports and pastReports states
-    const [activeReports, setActiveReports] = useState([]); 
-    const [pastReports, setPastReports] = useState([]);     
+    const [reports, setReports] = useState([]); // Store all fetched reports here
     const [selectedReport, setSelectedReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [statusMessage, setStatusMessage] = useState({ type: '', message: '' }); 
+    
+    // New state for forcing real-time update
+    const [realTimeKey, setRealTimeKey] = useState(0);
 
     const isStaff = user?.role === 'staff';
 
@@ -210,38 +261,79 @@ const AssignedReports = () => {
         
         try {
             const fetchedReports = await getAssignedReportsForStaff(); 
-            const allReports = fetchedReports || [];
-            
-            // 1. Separate Reports
-            const unresolved = allReports.filter(r => r.status === 'OPEN' || r.status === 'IN_PROGRESS');
-            const past = allReports.filter(r => r.status === 'Resolved' || r.status === 'CLOSED');
-
-            // 2. Prioritize Unresolved Reports (Severity -> Date)
-            const sortedUnresolved = unresolved.sort((a, b) => {
-                const orderA = SEVERITY_ORDER[a.severity] || 99;
-                const orderB = SEVERITY_ORDER[b.severity] || 99;
-                
-                // Primary Sort: Severity (High first)
-                if (orderA !== orderB) return orderA - orderB;
-                
-                // Secondary Sort: Date (Newest first)
-                return new Date(b.createdAt) - new Date(a.createdAt);
-            });
-
-            // 3. Sort Past Reports (Date)
-            const sortedPast = past.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-            
-            setActiveReports(sortedUnresolved);
-            setPastReports(sortedPast);
-
+            setReports(fetchedReports || []); // Update the master reports state
         } catch (err) {
             setError(err.message);
-            setActiveReports([]);
-            setPastReports([]);
+            setReports([]);
         } finally {
             setLoading(false);
         }
     }, []);
+
+    // --- REAL-TIME DEADLINE CHECKER ---
+    useEffect(() => {
+        let timer;
+        const nowTime = new Date().getTime();
+        
+        // 1. Find the next relevant deadline time among ALL active reports
+        const nextDeadlineTime = reports.reduce((minTime, report) => {
+            // Only consider reports that are NOT resolved/closed and have a deadline
+            if (report.status === 'Resolved' || report.status === 'CLOSED' || !report.deadline) return minTime;
+
+            const deadlineTime = new Date(report.deadline).getTime();
+            
+            // Only consider future deadlines
+            if (deadlineTime > nowTime && deadlineTime < minTime) {
+                return deadlineTime;
+            }
+            return minTime;
+        }, Infinity);
+
+        if (nextDeadlineTime !== Infinity) {
+            // Calculate delay until that specific moment (plus 1 second buffer)
+            const delay = nextDeadlineTime - nowTime + 1000;
+            
+            timer = setTimeout(() => {
+                // Force re-evaluation of report statuses by updating the key
+                setRealTimeKey(prev => prev + 1); 
+            }, delay);
+        }
+        
+        return () => clearTimeout(timer);
+    }, [reports, realTimeKey]); // realTimeKey added to dependency array to reset timer after a deadline passes
+
+    // --- SORTING AND SPLITTING LOGIC (Use useMemo to optimize) ---
+    const { activeReports, pastReports } = useMemo(() => {
+        // 1. Separate Reports based on status
+        const unresolved = reports.filter(r => r.status === 'OPEN' || r.status === 'IN_PROGRESS');
+        const past = reports.filter(r => r.status === 'Resolved' || r.status === 'CLOSED');
+
+        // 2. Prioritize Unresolved Reports (Severity -> Deadline Time -> Date)
+        const sortedUnresolved = unresolved.sort((a, b) => {
+            const orderA = SEVERITY_ORDER[a.severity] || 99;
+            const orderB = SEVERITY_ORDER[b.severity] || 99;
+            
+            // Primary Sort: Severity (High first)
+            if (orderA !== orderB) return orderA - orderB;
+            
+            // Secondary Sort: Deadline Time (Earliest deadline first)
+            const deadlineA = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+            const deadlineB = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+
+            if (deadlineA !== deadlineB) {
+                // Infinity (no deadline) goes last. Earliest deadline goes first.
+                return deadlineA - deadlineB;
+            }
+            
+            // Tertiary Sort: Creation Date (Newest first)
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+
+        // 3. Sort Past Reports (Date)
+        const sortedPast = past.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        
+        return { activeReports: sortedUnresolved, pastReports: sortedPast };
+    }, [reports, realTimeKey]); // Reruns when reports are fetched OR when a deadline passes
 
     // Effect for status message timeout
     useEffect(() => {
@@ -336,10 +428,10 @@ const AssignedReports = () => {
                             ))}
                         </div>
                     ) : (
-                         <div className="no-reports-message">
-                            <i className="fas fa-clipboard-check"></i>
-                            <p>No issues are currently pending action. Time for a coffee break!</p>
-                        </div>
+                           <div className="no-reports-message">
+                                <i className="fas fa-clipboard-check"></i>
+                                <p>No issues are currently pending action. Time for a coffee break!</p>
+                            </div>
                     )}
                 </section>
                 
@@ -348,20 +440,20 @@ const AssignedReports = () => {
                     <h2>Resolved/Past Tasks ({pastReports.length})</h2>
                     
                     {(pastReports.length > 0) ? (
-                         <div className="reports-grid">
-                            {pastReports.map(report => (
-                                <AssignedReportCard 
-                                    key={report._id} 
-                                    report={report} 
-                                    onClick={setSelectedReport}
-                                />
-                            ))}
-                        </div>
+                            <div className="reports-grid">
+                                {pastReports.map(report => (
+                                    <AssignedReportCard 
+                                        key={report._id} 
+                                        report={report} 
+                                        onClick={setSelectedReport}
+                                    />
+                                ))}
+                            </div>
                     ) : (
-                         <div className="no-reports-message mini-message">
-                            <i className="fas fa-history"></i>
-                            <p>No reports have been resolved yet.</p>
-                        </div>
+                            <div className="no-reports-message mini-message">
+                                <i className="fas fa-history"></i>
+                                <p>No reports have been resolved yet.</p>
+                            </div>
                     )}
                 </section>
             </div>

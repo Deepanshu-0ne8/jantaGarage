@@ -1,6 +1,6 @@
-import express from 'express';
+import express, { Router } from 'express';
 import { authorize } from '../middlewares/auth.middleware.js';
-import { createReport, getAllReports, getAllStaff, getAllUnAssignedReports, getReportById, getReportsByUserId, rejectResolution, updateReportStatusTOInProgress, updateReportStatusToResolved, updateReportStatusTOResolvedNotifiction } from '../controllers/report.controllers.js';
+import { createReport, getAllAssignedReportsByAdmin, getAllReports, getAllStaff, getAllUnAssignedReports, getReportById, getReportsByUserId, notifyOnOverdueReports, rejectResolution, updateReportStatusTOInProgress, updateReportStatusToResolved, updateReportStatusTOResolvedNotifiction } from '../controllers/report.controllers.js';
 import { upload } from '../middlewares/multer.middleware.js';
 
 const reportRouter = express.Router();
@@ -28,6 +28,10 @@ reportRouter.get('/getAllStaff/:id', authorize, getAllStaff);
 reportRouter.patch('/toResolved/:id', authorize, updateReportStatusToResolved);
 
 reportRouter.patch('/reject/:id', authorize, rejectResolution);
+
+reportRouter.get('/assignedReports', authorize, getAllAssignedReportsByAdmin);
+
+reportRouter.patch('/notifyForOverdue/:id', authorize, notifyOnOverdueReports);
 
 
 

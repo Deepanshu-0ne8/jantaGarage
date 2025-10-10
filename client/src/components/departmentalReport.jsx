@@ -1,9 +1,36 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/authContext';
-// Removed updateStatusToInProgress and updateStatusToResolvedNotification imports
 import { getDepartmentalReports } from '../services/reportService'; 
 import './departmentalReport.css';
 import Navbar from './navbar'; 
+
+const SEVERITY_ORDER = {
+  'High': 1,
+  'Medium': 2,
+  'Low': 3,
+};
+
+// Helper to determine deadline chip status, comparing the full timestamp (date + time)
+const getDeadlineStatus = (deadlineDate) => {
+    if (!deadlineDate) return 'none';
+
+    const nowTime = new Date().getTime();
+    const deadlineTime = new Date(deadlineDate).getTime();
+    
+    const msInDay = 1000 * 60 * 60 * 24;
+
+    // 1. Check if the current time has passed the deadline time
+    if (nowTime > deadlineTime) return 'overdue';
+
+    // 2. Calculate remaining time for 'duesoon'
+    const diffDays = (deadlineTime - nowTime) / msInDay;
+
+    // Use 'critical' for high urgency instead of 'duesoon' to match standard naming convention (0-1 day remaining)
+    if (diffDays <= 1) return 'critical'; 
+    if (diffDays <= 3) return 'urgent'; // Use 'urgent' for 1-3 days remaining
+    return 'normal';
+};
+
 
 // --- Attachment Modal Component (New) ---
 const AttachmentModal = ({ imageUrl, onClose }) => {
@@ -27,10 +54,16 @@ const AttachmentModal = ({ imageUrl, onClose }) => {
 
 
 // Component to display a single report item
-const ReportItem = ({ report }) => { // Removed onReportStatusChange prop
+const ReportItem = ({ report }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false); // Only used for image modal
+    const [isModalOpen, setIsModalOpen] = useState(false); 
     
+    // --- Deadline Calculations ---
+    const deadlineStatus = getDeadlineStatus(report.deadline);
+    const isOverdue = deadlineStatus === 'overdue';
+    const deadlineText = report.deadline ? new Date(report.deadline).toLocaleDateString('en-GB') : 'N/A';
+    const fullDeadlineText = report.deadline ? new Date(report.deadline).toLocaleString('en-GB') : 'N/A';
+
     // --- Data Mapping based on Report Schema ---
     const reportDetails = {
         locationLink: report.location?.coordinates ? 
@@ -39,9 +72,9 @@ const ReportItem = ({ report }) => { // Removed onReportStatusChange prop
         id: report._id,
         title: report.title,
         description: report.description,
-        severity: report.severity,
+        severity: report.severity || 'Low',
         departments: report.departments,
-        status: report.status,
+        status: report.status || 'OPEN',
         imageUrl: report.image?.url, 
         isNotified: report.isNotifiedTOResolved, 
         history: [
@@ -54,20 +87,30 @@ const ReportItem = ({ report }) => { // Removed onReportStatusChange prop
     const statusClass = reportDetails.status ? 
         reportDetails.status.toLowerCase().replace(/_/g, '-') : 
         '';
+    const severityClass = reportDetails.severity.toLowerCase();
 
     const attachmentCount = reportDetails.imageUrl ? 1 : 0;
     
+    const cardClass = `report-card status-${statusClass} ${isOverdue ? 'is-overdue' : ''}`;
+    
     return (
         <>
-            <div className="report-card">
+            <div className={cardClass}>
                 <div className="report-summary" onClick={() => setIsOpen(!isOpen)}>
                     <div className="report-id-info">
                         <span className="report-id"># {reportDetails.id?.substring(0, 8) || 'N/A'}</span>
                         <h3 className="report-title">{reportDetails.title || 'Untitled Report'}</h3>
                     </div>
                     <div className="report-meta">
-                        <span className={`report-status status-${statusClass}`}>{reportDetails.status}</span>
-                        <span className="report-date">{reportDate}</span>
+                        
+                        {/* NEW: Overdue Tag */}
+                        {isOverdue && (
+                            <span className="deadline-tag overdue-tag-card">OVERDUE</span>
+                        )}
+
+                        <span className={`report-deadline deadline-${deadlineStatus}`}>{deadlineText}</span>
+
+                        <span className={`report-severity severity-${severityClass}`}>{reportDetails.severity}</span>
                         <i className={`fas fa-chevron-right chevron ${isOpen ? 'open' : ''}`}></i>
                     </div>
                 </div>
@@ -80,16 +123,16 @@ const ReportItem = ({ report }) => { // Removed onReportStatusChange prop
                             <p className="detail-field half-width"><span className="detail-label">Report ID:</span> {reportDetails.id}</p>
                             <p className="detail-field half-width"><span className="detail-label">Status:</span> <span className={`report-status status-${statusClass}`}>{reportDetails.status}</span></p>
 
-                            {/* Row 2: Severity & Created At */}
-                            <p className="detail-field half-width"><span className="detail-label">Severity:</span> <span className={`severity-${reportDetails.severity.toLowerCase()}`}>{reportDetails.severity}</span></p>
+                            {/* Row 2: Severity & Deadline */}
+                            <p className="detail-field half-width"><span className="detail-label">Severity:</span> <span className={`severity-${severityClass}`}>{reportDetails.severity}</span></p>
+                            <p className="detail-field half-width"><span className="detail-label">Target Deadline:</span> <span className={`deadline-text deadline-${deadlineStatus}`}>{fullDeadlineText}</span></p>
+                            
+                            {/* Row 3: Dates */}
                             <p className="detail-field half-width"><span className="detail-label">Reported On:</span> {new Date(report.createdAt).toLocaleString()}</p>
-                            
-                            {/* Row 3: Description */}
+                            <p className="detail-field half-width"><span className="detail-label">Last Updated:</span> {new Date(report.updatedAt).toLocaleString()}</p>
+
+                            {/* Row 4: Description */}
                             <p className="detail-field full-width"><span className="detail-label">Description:</span> {reportDetails.description || 'No detailed description provided.'}</p>
-                            
-                            {/* Row 4: Location (Coordinates & Map Link) */}
-                            <p className="detail-field half-width"><span className="detail-label">Coordinates:</span> {report.location?.coordinates?.join(', ') || 'N/A'}</p>
-                            <p className="detail-field half-width"><span className="detail-label">Map:</span> <a href={reportDetails.locationLink} target="_blank" rel="noopener noreferrer" className="map-link">View Location <i className="fas fa-external-link-alt"></i></a></p>
                             
                             {/* Row 5: Departments */}
                              <p className="detail-field full-width">
@@ -101,10 +144,10 @@ const ReportItem = ({ report }) => { // Removed onReportStatusChange prop
                                 </div>
                             </p>
                             
-                            {/* Row 6: Last Updated */}
-                            <p className="detail-field full-width">
-                                <span className="detail-label">Last Updated:</span> {new Date(report.updatedAt).toLocaleString()}
-                            </p>
+                            {/* Row 6: Location (Coordinates & Map Link) */}
+                            <p className="detail-field half-width"><span className="detail-label">Coordinates:</span> {report.location?.coordinates?.join(', ') || 'N/A'}</p>
+                            <p className="detail-field half-width"><span className="detail-label">Map:</span> <a href={reportDetails.locationLink} target="_blank" rel="noopener noreferrer" className="map-link">View Location <i className="fas fa-external-link-alt"></i></a></p>
+                            
                         </div>
 
                         {/* Actions (Only View Image remains) */}
@@ -140,9 +183,32 @@ const DepartmentalReport = () => {
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [statusMessage, setStatusMessage] = useState({ type: '', message: '' }); // Retaining for error/fetch messages
+    const [statusMessage, setStatusMessage] = useState({ type: '', message: '' }); 
 
     const isAuthorized = user?.role === 'staff' || user?.role === 'admin';
+
+    const sortReports = useCallback((fetchedReports) => {
+        return fetchedReports.sort((a, b) => {
+            const orderA = SEVERITY_ORDER[a.severity] || 99;
+            const orderB = SEVERITY_ORDER[b.severity] || 99;
+
+            // Primary Sort: Severity (High first)
+            if (orderA !== orderB) return orderA - orderB;
+            
+            // Secondary Sort: Deadline (Earliest deadline time first)
+            const deadlineA = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+            const deadlineB = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+            
+            if (deadlineA !== deadlineB) {
+                // Reports with no deadline go last. Earliest deadline goes first.
+                return deadlineA - deadlineB; 
+            }
+
+            // Tertiary Sort: Creation Date (Newest first)
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+    }, []);
+
 
     const fetchReports = useCallback(async () => {
         setLoading(true);
@@ -150,7 +216,8 @@ const DepartmentalReport = () => {
         
         try {
             const fetchedReports = await getDepartmentalReports();
-            setReports(fetchedReports);
+            const sortedReports = sortReports(fetchedReports || []);
+            setReports(sortedReports);
             setError(null); 
         } catch (err) {
             setError(err.message);
@@ -158,21 +225,12 @@ const DepartmentalReport = () => {
         } finally {
             setLoading(false);
         }
-    }, [error]); 
+    }, [error, sortReports]); 
 
     useEffect(() => {
         if (authLoading || !user || !isAuthorized) return;
         fetchReports();
     }, [user, authLoading, isAuthorized, fetchReports]);
-
-
-    // Effect for status message timeout (Retained for displaying fetch/server errors)
-    useEffect(() => {
-        if (statusMessage.message) {
-            const timer = setTimeout(() => setStatusMessage({ type: '', message: '' }), 4000);
-            return () => clearTimeout(timer);
-        }
-    }, [statusMessage]);
 
 
     // Simplified handler (no longer needs to refresh list based on action, only shows messages)
@@ -229,8 +287,8 @@ const DepartmentalReport = () => {
                     <h1>Departmental Reports Dashboard</h1>
                     <p>
                         {user.role === 'admin' 
-                            ? 'Showing ALL reports in the system (View Only).' 
-                            : `Showing reports assigned to: **${user.departments?.join(', ') || 'N/A'}** (View Only).`
+                            ? 'Showing ALL reports in the system (View Only). Sorted by Severity and Deadline.' 
+                            : `Showing reports assigned to: **${user.departments?.join(', ') || 'N/A'}** (View Only). Sorted by Severity and Deadline.`
                         }
                     </p>
                 </div>
@@ -240,7 +298,6 @@ const DepartmentalReport = () => {
                         <ReportItem 
                             key={report._id} 
                             report={report} 
-                            onReportStatusChange={handleReportStatusChange} // Retained for showing fetch errors
                         />
                     ))}
                 </div>

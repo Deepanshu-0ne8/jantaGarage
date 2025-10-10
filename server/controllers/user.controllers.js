@@ -280,6 +280,14 @@ export const rejectVerification = async (req, res, next) => {
 
 export const assignReportToStaff = async (req, res, next) => {
     try {
+
+      if (req.user.role !== "admin") {
+        return res.status(403).json({
+          success: false,
+          message: "Only admins can assign reports to staff.",
+        });
+      }
+
       const { reportId, staffId } = req.body;
 
       if (!reportId || !staffId) {
@@ -313,7 +321,18 @@ export const assignReportToStaff = async (req, res, next) => {
       }
 
       report.isAssigned = true;
-      report.assignedTo = staff._id;
+      report.assignedTo = {
+        name: staff.name,
+        userName: staff.userName,
+        _id: staff._id,
+        email: staff.email,
+      };
+      report.assignedBy = {
+        name: req.user.name,
+        userName: req.user.userName,
+        _id: req.user._id,
+        email: req.user.email
+      };
       await report.save();
 
       staff.reportsAssigned.push(report._id);
@@ -336,34 +355,43 @@ export const assignReportToStaff = async (req, res, next) => {
     }
 }
 
-
 export const getAssignedReports = async (req, res, next) => {
     try {
       const user = req.user;
+      
       if(user.role === "citizen" || user.role === "admin") {
         return res.status(403).json({
             success: false,
             message: "Only staff members can have assigned reports."
         });
       }
+      
       const reportsId = user.reportsAssigned;
+      
       if(!reportsId || reportsId.length === 0) {
-        return res.status(404).json({
-            success: false,
-            message: 'No assigned reports found for this staff'
-        });
-      }
-      const reports = await Report.find({_id: { $in: reportsId }});
-      if(reports.length === 0) {
-        return res.status(404).json({
-            success: false,
-            message: 'No assigned reports found for this staff'
-        });
-      }
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            data: reports
-        })
+            data: [],
+            message: 'No assigned reports found for this staff'
+        });
+      }
+
+      const reports = await Report.find({_id: { $in: reportsId }})
+        .sort({ createdAt: -1 });
+        
+      if(reports.length === 0) {
+        return res.status(200).json({
+            success: true,
+            message: 'No active reports found for this staff',
+            data: []
+        });
+      }
+      
+      res.status(200).json({
+          success: true,
+          data: reports
+      });
+
     } catch (error) {
       next(error);
     }
