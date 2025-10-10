@@ -76,7 +76,7 @@ export const getUnassignedReports = async () => {
 export const getAllEligibleStaff = async (reportId) => {
     try {
         const response = await api.get(`/reports/getAllStaff/${reportId}`);
-        return response.data.data;
+        return response.data;
     } catch (error) {
         const errorMessage = error.response?.data?.message || "Failed to fetch staff list.";
         throw new Error(errorMessage);
@@ -100,5 +100,26 @@ export const rejectResolution = async (reportId) => {
     } catch (error) {
         const errorMessage = error.response?.data?.message || "Failed to reject resolution.";
         throw new Error(errorMessage);
+    }
+};
+
+
+export const getAllSystemReports = async () => {
+    try {
+        const response = await api.get('/reports', { withCredentials: true });
+        return response.data.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to fetch all system reports.");
+    }
+};
+
+export const getAssignedReportsByAdmin = async () => {
+    try {
+        const response = await api.get('/reports/assignedReports', { withCredentials: true });
+        console.log("Response from getAssignedReportsByAdmin:", response.data); // Debugging line
+        return response.data.data;
+
+    } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to fetch reports assigned by admin.");
     }
 };

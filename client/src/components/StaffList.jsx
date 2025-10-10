@@ -30,11 +30,11 @@ const StaffAvatar = ({ staff, isDetail = false }) => {
 // --- Staff Detail Modal ---
 const StaffDetailModal = ({ staff, onClose, onAssign, isAssignmentLoading, currentReportId }) => {
     
+    // Workload field removed
     const relevantFields = [
         { label: "Role", value: staff.role.toUpperCase() },
         { label: "Email", value: staff.email },
         { label: "Contact", value: staff.contact || 'N/A' },
-        { label: "Total Assigned Reports", value: staff.reportsAssignedCount },
         { label: "Departments", value: staff.departments.join(', ') },
     ];
     
@@ -83,10 +83,9 @@ const StaffItem = ({ staff, onCardClick }) => (
                 <p className="staff-email">{staff.email}</p>
             </div>
         </div>
-        <div className staff-workload>
-            <span className="workload-label">Active Assignments:</span>
-            <span className="workload-count">{staff.reportsAssignedCount}</span>
-        </div>
+        
+        {/* Workload display removed */}
+
         <div className="staff-departments">
             {staff.departments.map(dept => (
                 <span key={dept} className="dept-tag-mini">{dept.split(' ')[0]}</span>
@@ -102,9 +101,10 @@ const StaffList = () => {
     const query = useQuery();
     const reportId = query.get('reportId');
 
-    const [staffs, setStaffs] = useState([]);
-    const [selectedStaff, setSelectedStaff] = useState(null); 
+    // New state to hold staff grouped by the report's required departments
+    const [staffsByDepartment, setStaffsByDepartment] = useState({}); 
     const [reportDepartments, setReportDepartments] = useState([]);
+    const [selectedStaff, setSelectedStaff] = useState(null); 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isAssignmentLoading, setIsAssignmentLoading] = useState(false);
@@ -112,17 +112,28 @@ const StaffList = () => {
 
     const isAuthorized = user?.role === 'admin'; 
 
-    // --- SORTING LOGIC ---
-    const sortStaffsByWorkload = (staffs) => {
-        return staffs.sort((a, b) => {
-            const countA = a.reportsForVerification?.length || 0;
-            const countB = b.reportsForVerification?.length || 0;
-            return countA - countB; 
-        }).map(s => ({
-            ...s,
-            id: s._id,
-            reportsAssignedCount: s.reportsForVerification?.length || 0
-        }));
+    // --- LOGIC: Group staff by report department ---
+    const groupStaffByDepartment = (fetchedStaff, departmentsRequired) => {
+        const grouped = {};
+
+        // 1. Initialize groups for every department the report requires
+        departmentsRequired.forEach(dept => {
+            grouped[dept] = [];
+        });
+
+        // 2. Iterate through staff and place them in all relevant department sections
+        fetchedStaff.forEach(staff => {
+            // Check which of the report's required departments this staff member handles
+            departmentsRequired.forEach(reportDept => {
+                if (staff.departments && staff.departments.includes(reportDept)) {
+                    grouped[reportDept].push({
+                        ...staff,
+                        id: staff._id, // Ensure ID is present for keying
+                    });
+                }
+            });
+        });
+        return grouped;
     };
 
     const fetchStaff = useCallback(async () => {
@@ -133,19 +144,25 @@ const StaffList = () => {
 
         try {
             setLoading(true);
-            const fetchedStaff = await getAllEligibleStaff(reportId);
             
-            const sortedStaff = sortStaffsByWorkload(fetchedStaff);
+            // Assume getAllEligibleStaff fetches data from the backend route
+            const fetchedResponse = await getAllEligibleStaff(reportId);
+            
+            // Correctly extract staff and departments from the confirmed API response structure
+            const fetchedStaff = fetchedResponse.data?.staffs || [];
+            const departmentsRequired = fetchedResponse.data?.reportDepartments || []; 
 
-            setStaffs(sortedStaff);
-            
-            if (sortedStaff.length > 0) {
-                const allDepts = new Set(sortedStaff.flatMap(s => s.departments));
-                setReportDepartments(Array.from(allDepts));
-            }
+            // Set the extracted departments
+            setReportDepartments(departmentsRequired);
+
+            // Group the staff based on the extracted required departments
+            const groupedStaff = groupStaffByDepartment(fetchedStaff, departmentsRequired);
+            setStaffsByDepartment(groupedStaff);
 
         } catch (err) {
-            setError(err.message);
+            const errMsg = err.message || "Failed to fetch eligible staff or report details.";
+            console.error("Fetch Staff Error:", errMsg);
+            setError(errMsg);
         } finally {
             setLoading(false);
         }
@@ -212,17 +229,21 @@ const StaffList = () => {
         );
     }
 
+    const allDepartments = Object.keys(staffsByDepartment);
+    const hasAnyStaff = allDepartments.some(dept => staffsByDepartment[dept].length > 0);
+
     return (
         <>
             <Navbar />
             <div className="staff-list-wrapper">
                 <header className="staff-list-header">
                     <button className="back-button" onClick={() => navigate('/unAssignedReports')}>
-                         <i className="fas fa-arrow-left"></i> Back to Queue
-                    </button>
+                         <i className="fas fa-arrow-left"></i> Back to Queue</button>
                     <h1>Assign Report #{reportId.substring(0, 8)}</h1>
-                    <p className="report-context">Eligible staff for departments: **{reportDepartments.join(', ')}**</p>
-                    <p className="sort-indicator">Sorted by: **Least Assigned Reports** (Best candidate first)</p>
+                    <p className="report-context">
+                        Staff assignment grouped by the **{reportDepartments.length}** required departments: 
+                        <span className="required-depts-list">{reportDepartments.join(', ')}</span>
+                    </p>
                 </header>
 
                 {assignmentStatus && (
@@ -231,14 +252,29 @@ const StaffList = () => {
                     </div>
                 )}
                 
-                {staffs.length > 0 ? (
-                    <div className="staff-grid">
-                        {staffs.map(staff => (
-                            <StaffItem 
-                                key={staff._id} 
-                                staff={staff} 
-                                onCardClick={setSelectedStaff} 
-                            />
+                {hasAnyStaff ? (
+                    <div className="department-groups-container">
+                        {allDepartments.map(dept => (
+                            <section key={dept} className="department-section">
+                                <h2 className="department-title">
+                                    <i className="fas fa-sitemap"></i> {dept}
+                                    <span className="staff-count-badge">{staffsByDepartment[dept].length} Staff</span>
+                                </h2>
+                                
+                                {staffsByDepartment[dept].length > 0 ? (
+                                    <div className="staff-grid">
+                                        {staffsByDepartment[dept].map(staff => (
+                                            <StaffItem 
+                                                key={staff._id + dept} // Unique key for staff in a section
+                                                staff={staff} 
+                                                onCardClick={setSelectedStaff} 
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="no-staff-in-dept">No staff currently eligible in this department.</div>
+                                )}
+                            </section>
                         ))}
                     </div>
                 ) : (

@@ -1,0 +1,497 @@
+/* --- Global Variables and Base Styles --- */
+:root {
+    --primary-color: #3b82f6; /* Blue 500 */
+    --accent-color: #10b981;  /* Emerald 500 */
+    --danger-color: #ef4444;  /* Red 500 */
+    --warning-color: #f59e0b; /* Amber 500 */
+    --text-dark: #1f2937;     /* Gray 800 */
+    --text-light: #6b7280;    /* Gray 500 */
+    --bg-light: #f9fafb;      /* Gray 50 */
+    --card-bg: #ffffff;
+    --border-color: #e5e7eb;  /* Gray 200 */
+    --border-radius: 8px;
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+    /* Severity Colors */
+    --severity-high: var(--danger-color);
+    --severity-medium: var(--warning-color);
+    --severity-low: var(--primary-color);
+
+    /* Status Colors */
+    --status-open: var(--warning-color);
+    --status-in-progress: var(--primary-color);
+    --status-resolved: var(--accent-color);
+    --status-closed: var(--text-light);
+
+    /* Deadline Colors */
+    --deadline-overdue-bg: #fef2f2; /* Red 50 */
+    --deadline-overdue-text: #b91c1c; /* Red 700 */
+    --deadline-critical-bg: #fff7ed; /* Orange 50 */
+    --deadline-critical-text: #c2410c; /* Orange 700 */
+    --deadline-urgent-bg: #eff6ff; /* Blue 50 */
+    --deadline-urgent-text: #1e40af; /* Blue 700 */
+    --deadline-normal-bg: #f3f4f6; /* Gray 100 */
+    --deadline-normal-text: var(--text-dark);
+    --deadline-none-bg: #e5e7eb;
+    --deadline-none-text: var(--text-light);
+}
+
+/* --- Keyframe for Overdue Tag --- */
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+body {
+    background-color: var(--bg-light);
+    font-family: 'Inter', sans-serif;
+}
+
+/* --- Layout and Header --- */
+.page-wrapper {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.page-header {
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 3px solid var(--primary-color);
+    text-align: center;
+}
+.page-header h1 {
+    font-size: 2.2rem;
+    color: var(--text-dark);
+    margin: 0 0 5px 0;
+    font-weight: 800;
+}
+.page-header p {
+    font-size: 1rem;
+    color: var(--text-light);
+}
+
+/* --- Filter Bar --- */
+.reports-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 20px;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 30px;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 150px;
+    position: relative;
+}
+
+.filter-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-light);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.reports-filter-bar select, 
+.filter-dropdown-toggle,
+.reset-filter-btn {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-light);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.reports-filter-bar select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7em top 50%;
+    background-size: 0.65em auto;
+}
+
+.filter-dropdown-toggle {
+    text-align: left;
+}
+
+.department-dropdown {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    z-index: 10;
+    width: 300px;
+    max-height: 250px;
+    overflow-y: auto;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: var(--shadow-md);
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background-color 0.1s;
+}
+
+.reset-filter-btn {
+    background-color: var(--danger-color);
+    color: white;
+    border: none;
+    align-self: flex-end;
+    font-weight: 700;
+}
+
+/* --- Report Sections --- */
+.report-section {
+    margin-bottom: 40px;
+}
+.report-section h2 {
+    font-size: 1.5rem;
+    color: var(--text-dark);
+    margin: 30px 0 15px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #e5e7eb;
+    font-weight: 700;
+}
+.report-section.active-tasks h2 {
+    border-bottom-color: var(--warning-color);
+}
+.report-section.past-tasks h2 {
+    border-bottom-color: var(--accent-color);
+}
+
+/* --- Report List Grid --- */
+.reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+}
+
+/* --- Report Card Item --- */
+.report-card-item {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: box-shadow 0.2s, transform 0.2s;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+/* Overdue card visual highlight */
+.report-card-item.is-overdue {
+    border: 2px solid var(--deadline-overdue-text);
+    box-shadow: 0 0 12px rgba(185, 28, 28, 0.4);
+    background-color: var(--deadline-overdue-bg);
+}
+
+.report-card-item:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.card-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--primary-color);
+}
+
+.card-assignee {
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    margin-bottom: 10px;
+}
+
+.card-assignee strong {
+    font-weight: 700;
+}
+
+.card-footer {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color);
+}
+
+/* --- Chip Styling --- */
+.status-badge, .severity-chip, .deadline-chip-card, .deadline-tag {
+    padding: 5px 10px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-transform: uppercase;
+}
+
+/* Status Badges */
+.status-badge.status-open { background-color: var(--status-open); color: var(--text-dark); }
+.status-badge.status-in-progress { background-color: var(--status-in-progress); color: white; }
+.status-badge.status-resolved, .status-badge.status-closed { background-color: var(--status-resolved); color: white; }
+
+/* Severity Chip */
+.severity-chip.severity-high { background-color: var(--severity-high); color: white; }
+.severity-chip.severity-medium { background-color: var(--warning-color); color: var(--text-dark); }
+.severity-chip.severity-low { background-color: var(--primary-color); color: white; }
+
+/* Deadline Tag (OVERDUE card tag) */
+.deadline-tag.overdue-tag-card {
+    background-color: var(--deadline-overdue-text);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    animation: blink 1s infinite alternate;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+/* Deadline Text Styling */
+.deadline-chip-card { background-color: var(--deadline-normal-bg); color: var(--deadline-normal-text); }
+.deadline-chip-card.deadline-overdue { background-color: var(--deadline-overdue-bg); color: var(--deadline-overdue-text); }
+.deadline-chip-card.deadline-critical { background-color: var(--deadline-critical-bg); color: var(--deadline-critical-text); }
+.deadline-chip-card.deadline-urgent { background-color: var(--deadline-urgent-bg); color: var(--deadline-urgent-text); }
+.deadline-chip-card.deadline-none { background-color: var(--deadline-none-bg); color: var(--deadline-none-text); }
+.deadline-chip-card.date-info { text-transform: none; } /* Date info should not be uppercase */
+
+/* --- Messages --- */
+.no-reports-message {
+    padding: 40px;
+    margin: 15px 0;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    text-align: center;
+}
+.no-reports-message.mini-message {
+    padding: 20px;
+    box-shadow: none;
+    border: 1px dashed var(--border-color);
+}
+.no-reports-message.large-message {
+    max-width: 600px;
+    margin: 40px auto;
+}
+.no-reports-message i {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+.no-reports-message.error-message i {
+    color: var(--danger-color);
+}
+
+/* --- Modal Styles (Detailed Popup) --- */
+.report-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0,0,0,0.75);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.report-modal {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 700px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    position: relative;
+    outline: none;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    color: var(--text-light);
+    cursor: pointer;
+}
+
+.report-popup h2 {
+    color: var(--primary-color);
+    font-weight: 700;
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 1.5rem;
+}
+
+.modal-content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.modal-detail strong {
+    font-weight: 700;
+    color: var(--text-light);
+    margin-right: 5px;
+    display: inline-block;
+}
+
+.modal-detail.full-row {
+    grid-column: 1 / -1;
+}
+
+.report-task-actions {
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px dashed #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+}
+
+.close-btn, .action-button { /* General style for action buttons in modal */
+    padding: 10px 20px;
+    background: var(--text-light);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.close-btn:hover {
+    background: #5a6268;
+}
+
+.action-button.view-image-button {
+    background-color: var(--primary-color);
+}
+.action-button.view-image-button:hover:not(:disabled) {
+    background-color: #2563eb;
+}
+.action-button:disabled {
+    background-color: #d1d5db;
+    cursor: not-allowed;
+}
+
+/* --- NEW: Attachment Modal Styles --- */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; /* Higher z-index than main modal */
+}
+
+.attachment-modal {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 90vw;
+    width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.attachment-modal h3 {
+    color: var(--primary-color);
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.attachment-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.no-attachments {
+    text-align: center;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+
+/* --- Responsiveness --- */
+@media (max-width: 768px) {
+    .page-wrapper {
+        padding: 0 10px;
+    }
+    .reports-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .filter-group {
+        min-width: 100%;
+    }
+    .reports-grid {
+        grid-template-columns: 1fr;
+    }
+    .report-modal {
+        padding: 20px;
+    }
+    .modal-content-grid {
+        gap: 10px;
+        grid-template-columns: 1fr;
+    }
+    .report-task-actions {
+        flex-direction: column-reverse; /* Put Close on top, View Image below */
+    }
+    .close-btn, .action-button {
+        width: 100%;
+        justify-content: center;
+    }
+}
