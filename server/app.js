@@ -6,6 +6,7 @@ import reportRouter from './routes/report.routes.js';
 import cookieParser from 'cookie-parser';
 import userRouter from './routes/user.routes.js';
 import cors from 'cors';
+import reportRoutes from "./routes/report.routes.js";
 const app = express();
 
 app.use(
@@ -22,6 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/reports', reportRouter);
+app.use("/api/reports", reportRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port http://localhost:${PORT}`);
