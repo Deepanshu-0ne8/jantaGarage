@@ -5,7 +5,6 @@ import cors from 'cors';
 import authRouter from './routes/auth.routes.js';
 import reportRouter from './routes/report.routes.js';
 import userRouter from './routes/user.routes.js';
-import cors from 'cors';
 import reportRoutes from "./routes/report.routes.js";
 import { CLIENT_URL } from './config/env.js';
 
