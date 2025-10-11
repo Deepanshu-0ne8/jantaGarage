@@ -1,9 +1,25 @@
 import express, { Router } from 'express';
 import { authorize } from '../middlewares/auth.middleware.js';
-import { createReport, getAllAssignedReportsByAdmin, getAllReports, getAllStaff, getAllUnAssignedReports, getReportById, getReportsByUserId, notifyOnOverdueReports, rejectResolution, updateReportStatusTOInProgress, updateReportStatusToResolved, updateReportStatusTOResolvedNotifiction } from '../controllers/report.controllers.js';
+import { createReport,
+        getAllAssignedReportsByAdmin,
+        getAllReports,
+        getAllStaff,
+        getAllUnAssignedReports,
+        getReportById,
+        getReportsByUserId,
+        notifyOnOverdueReports,
+        rejectResolution,
+        updateReportStatusTOInProgress, 
+        updateReportStatusToResolved,
+        updateReportStatusTOResolvedNotifiction,
+        downloadReportsCSV
+    } from '../controllers/report.controllers.js';
 import { upload } from '../middlewares/multer.middleware.js';
+import multer from "multer";
+
 
 const reportRouter = express.Router();
+// const upload = multer({ dest: "uploads/" });
 
 reportRouter.post('/', authorize, upload.single('reportImage'), createReport);
 
@@ -33,6 +49,7 @@ reportRouter.get('/assignedReports', authorize, getAllAssignedReportsByAdmin);
 
 reportRouter.patch('/notifyForOverdue/:id', authorize, notifyOnOverdueReports);
 
+reportRouter.get("/download-csv", downloadReportsCSV);
 
 
 export default reportRouter;

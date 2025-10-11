@@ -5,6 +5,8 @@ import cors from 'cors';
 import authRouter from './routes/auth.routes.js';
 import reportRouter from './routes/report.routes.js';
 import userRouter from './routes/user.routes.js';
+import cors from 'cors';
+import reportRoutes from "./routes/report.routes.js";
 import { CLIENT_URL } from './config/env.js';
 
 const app = express();
@@ -23,6 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/reports', reportRouter);
+app.use("/api/reports", reportRoutes);
 
 
 export default app;

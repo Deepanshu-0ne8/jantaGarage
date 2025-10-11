@@ -6,7 +6,7 @@ import Signup from "./pages/signup.jsx";
 import VerifyOTP from "./pages/emailverify.jsx";
 import Home from "./pages/home.jsx";
 import Profile from "./components/profile.jsx";
-import Reports from "./components/Reports.jsx";
+import Reports from "./components/reports.jsx";
 import "./App.css";
 import { AuthProvider } from "./context/authContext.jsx";
 import ProtectedRoute from "./components/protectedRoutes.jsx";

@@ -3,6 +3,7 @@ import Report from "../models/report.model.js";
 import User from "../models/user.model.js";
 import { uploadrepOnCloudinary } from "../utils/cloudinary.js";
 import nodemailer from "nodemailer";
+import { Parser } from "json2csv";
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -544,3 +545,56 @@ catch (error) {
 //         next(error)
 //     }
 // }
+export const downloadReportsCSV = async (req, res) => {
+  try {
+    const reports = await Report.find().lean();
+
+    // Overall stats
+    const totalReports = reports.length;
+    const resolved = reports.filter(r => r.status === "Resolved").length;
+    const pending = reports.filter(r => r.status === "Pending").length;
+    const inProgress = reports.filter(r => r.status === "In Progress").length;
+
+    // Department-wise stats
+    const departments = [...new Set(reports.map(r => r.department))];
+    const departmentStats = departments.map(dep => {
+      const depReports = reports.filter(r => r.department === dep);
+      return {
+        department: dep,
+        total: depReports.length,
+        resolved: depReports.filter(r => r.status === "Resolved").length,
+        pending: depReports.filter(r => r.status === "Pending").length,
+        inProgress: depReports.filter(r => r.status === "In Progress").length
+      };
+    });
+
+    // CSV rows
+    const statsRow = {
+      title: "OVERALL STATS",
+      description: `Total: ${totalReports}, Resolved: ${resolved}, Pending: ${pending}, In Progress: ${inProgress}`,
+      severity: "",
+      department: "",
+      status: ""
+    };
+
+    const departmentRows = departmentStats.map(depStat => ({
+      title: `DEPARTMENT: ${depStat.department}`,
+      description: `Total: ${depStat.total}, Resolved: ${depStat.resolved}, Pending: ${depStat.pending}, In Progress: ${depStat.inProgress}`,
+      severity: "",
+      department: depStat.department,
+      status: ""
+    }));
+
+    const dataToExport = [statsRow, ...departmentRows, ...reports];
+
+    const fields = ["title", "description", "severity", "department", "status"];
+    const json2csvParser = new Parser({ fields });
+    const csv = json2csvParser.parse(dataToExport);
+
+    res.header("Content-Type", "text/csv");
+    res.attachment("reports.csv");
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
