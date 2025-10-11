@@ -396,3 +396,54 @@ export const getAssignedReports = async (req, res, next) => {
       next(error);
     }
 }
+
+export const getnotifyOnOverdueReports = async (req, res, next) => {
+  try {
+    res.status(200).json({
+      success: true,
+      data: req.user.notifications
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const notifyOnOverdueReportsRemove = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if(!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Report ID is required'
+      });
+    }
+    
+    const report = await Report.findById(id);
+    if(!report) {
+      return res.status(404).json({
+        success: false,
+        message: 'Report not found'
+      });
+    }
+
+    const initialLength = req.user.notifications.length;
+    req.user.notifications = req.user.notifications.filter(n => n.id.toString() !== id.toString());
+    if(req.user.notifications.length === initialLength) {
+      return res.status(404).json({
+        success: false,
+        message: 'No matching notification found'
+      });
+    }
+    await req.user.save();
+    res.status(200).json({
+      success: true,
+      message: 'Notification removed successfully',
+      data: req.user.notifications
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+
+
