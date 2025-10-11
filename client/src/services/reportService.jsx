@@ -123,3 +123,13 @@ export const getAssignedReportsByAdmin = async () => {
         throw new Error(error.response?.data?.message || "Failed to fetch reports assigned by admin.");
     }
 };
+
+export const getReportById = async (reportId) => {
+    try {
+        const response = await api.get(`/reports/get/${reportId}`, { withCredentials: true });
+        return response.data.data;
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || "Failed to fetch report details.";
+        throw new Error(errorMessage);
+    }
+};
