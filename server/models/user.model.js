@@ -116,6 +116,23 @@ const userSchema = new mongoose.Schema(
         message: "Citizens cannot have departments.",
       },
     },
+    notifications: {
+      type: [
+        {
+          id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Report",
+          },
+          message: String,
+          time: String,
+          read: {
+            type: Boolean,
+            default: false,
+          },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

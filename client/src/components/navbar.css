@@ -1,315 +1,450 @@
-/* src/components/navbar.css (Final Responsive Style - Removed Points & Settings) */
-
+/* --- Global Variables (Reused from dashboard context) --- */
 :root {
-    --navbar-bg: #ffffff;
-    --primary-color: #3b82f6; 
-    --accent-color: #10b981; 
-    --text-color: #1f2937;
-    --text-color-light: #4b5563;
-    
-    /* Panel Colors */
-    --panel-bg: #2d3748; 
-    --panel-card-bg: #4a5568; 
-    --panel-text-light: #f4f4f4;
-    --panel-text-faded: #a0a0a0;
-    --panel-width: 300px;
-    --panel-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
-    --role-admin-color: #ef4444; 
+    --primary-color: #3b82f6; /* Blue */
+    --accent-color: #10b981;  /* Emerald */
+    --danger-color: #ef4444;  /* Red for alerts/overdue */
+    --text-dark: #1f2937;
+    --text-light: #6b7280;
+    --bg-light: #f9fafb;
+    --card-bg: #ffffff;
+    --border-color: #e5e7eb;
+    --border-radius: 8px;
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
+/* --- Main Navbar Structure --- */
 .navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 30px;
-    background-color: var(--navbar-bg);
-    border-bottom: 1px solid #e5e7eb;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    font-family: 'Inter', sans-serif, Arial;
-    z-index: 500;
-    position: sticky;
-    top: 0;
+    padding: 10px 25px;
+    background-color: var(--card-bg);
+    box-shadow: var(--shadow-lg);
+    z-index: 50; /* Ensure navbar is above page content */
 }
 
-/* --- Core Navbar Layout (Unchanged) --- */
 .navbar-left {
     display: flex;
     align-items: center;
+    gap: 10px;
 }
+
 .navbar-logo {
-    height: 35px;
-    margin-right: 10px;
+    height: 30px;
 }
+
 .navbar-title {
     font-size: 1.5rem;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--primary-color);
 }
+
 .navbar-right {
     display: flex;
     align-items: center;
-    gap: 25px;
+    gap: 20px;
 }
+
 .nav-link {
-    color: var(--text-color);
+    color: var(--text-dark);
     text-decoration: none;
     font-weight: 500;
     padding: 5px 0;
-    white-space: nowrap;
+    transition: color 0.2s;
 }
+
+.nav-link:hover,
 .nav-link.active {
     color: var(--primary-color);
     border-bottom: 2px solid var(--primary-color);
 }
 
+/* --- User Menu Wrapper (holds both toggles/panels) --- */
 .user-menu-wrapper {
-    position: relative; 
-    z-index: 501;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
-.profile-panel-toggle-btn {
+/* --- Avatar & Toggle Buttons --- */
+.profile-panel-toggle-btn,
+.notification-toggle-btn {
     background: none;
     border: none;
-    padding: 0;
+    padding: 5px;
     cursor: pointer;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    transition: box-shadow 0.2s, border 0.2s;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border: 2px solid transparent;
-}
-.profile-panel-toggle-btn.active {
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
-    border-color: var(--primary-color);
+    transition: opacity 0.2s;
+    position: relative; /* Essential for badge positioning */
 }
 
-.profile-avatar-img {
-    width: 100%;
-    height: 100%;
+.profile-panel-toggle-btn:hover,
+.notification-toggle-btn:hover {
+    opacity: 0.8;
+}
+
+.notification-toggle-btn i {
+    font-size: 1.5rem;
+    color: var(--text-dark);
+}
+
+/* --- Profile Avatar Styles --- */
+.profile-avatar-img,
+.profile-avatar-initial {
+    width: 35px;
+    height: 35px;
     border-radius: 50%;
     object-fit: cover;
-}
-.profile-avatar-initial {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background-color: var(--accent-color);
-    color: white;
-    font-size: 18px;
+    font-size: 1rem;
     font-weight: 600;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+    background-color: var(--primary-color);
+    color: white;
 }
 
+/* --- Notification Badge --- */
+.notification-badge {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background-color: var(--danger-color);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 50%;
+    line-height: 1;
+    border: 2px solid var(--card-bg); /* Border makes it pop off the background */
+}
 
-/* -------------------------------------------------------------------
-   USER PANEL (FLOATING MODAL) STYLES
-   ------------------------------------------------------------------- */
-
-.user-panel {
-    position: absolute; 
-    top: calc(100% + 15px); 
+/* --- Floating Panels (Common Styles) --- */
+.user-panel,
+.notification-panel {
+    position: absolute;
+    top: calc(100% + 10px);
     right: 0;
-    width: var(--panel-width); 
-    max-width: 90vw; 
-    
-    background-color: var(--panel-bg);
-    color: var(--panel-text-light);
-    box-shadow: var(--panel-shadow);
-    border-radius: 12px; 
-    padding: 15px 0 10px 0; 
-    z-index: 999;
-    max-height: 85vh;
-    overflow-y: auto;
-    
-    opacity: 0; 
-    transform: translateY(-10px); 
-    animation: fadeInDown 0.3s forwards;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    width: 300px;
+    z-index: 100;
+    padding: 15px;
 }
 
-/* --- Panel Header (Unchanged) --- */
+/* --- User Panel (Profile Settings) --- */
+.user-panel {
+    width: 250px;
+}
+
 .panel-header {
-    padding: 0 20px 15px 20px;
-    margin-bottom: 15px; 
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 15px;
 }
 
 .panel-user-info {
     display: flex;
     align-items: center;
-    gap: 15px;
-}
-
-.panel-user-info .profile-avatar-img,
-.panel-user-info .profile-avatar-initial {
-    width: 50px; 
-    height: 50px;
-    font-size: 22px;
-    border: 2px solid var(--panel-text-light); 
-    border-radius: 12px; 
-    flex-shrink: 0;
+    gap: 10px;
 }
 
 .panel-text-info {
-    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .panel-user-name {
-    font-size: 1.1rem;
     font-weight: 700;
-    display: block;
-    margin-bottom: 2px;
+    color: var(--text-dark);
 }
 
 .panel-premium-status {
-    font-size: 0.8rem;
-    color: var(--panel-text-faded);
-    display: block;
-    line-height: 1.3;
+    font-size: 0.75rem;
+    color: var(--text-light);
 }
 
-/* --- Grid Section (3 items - uses 2x2 layout, leaving one spot empty) --- */
 .panel-grid {
     display: grid;
-    /* Keeps the 2-column layout to match the overall design aesthetic */
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    padding: 0 20px;
-    margin-bottom: 20px;
+    grid-template-columns: 1fr 1fr; /* 2x2 layout */
+    gap: 15px;
+    margin-bottom: 15px;
 }
 
 .panel-grid-item {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
+    align-items: center;
     text-decoration: none;
-    color: var(--panel-text-light);
-    padding: 10px 10px;
-    border-radius: 8px;
-    background-color: var(--panel-card-bg); 
+    color: var(--text-dark);
+    font-size: 0.85rem;
+    padding: 10px 5px;
+    border-radius: 6px;
     transition: background-color 0.2s;
-    font-size: 0.9rem;
-    font-weight: 500;
-    height: 80px; 
 }
 
 .panel-grid-item:hover {
-    background-color: rgba(74, 85, 104, 0.7);
+    background-color: var(--bg-light);
 }
 
 .icon-container {
-    width: 35px;
-    height: 35px;
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 8px;
     font-size: 1.2rem;
-    color: white;
+    margin-bottom: 5px;
+    color: var(--primary-color);
 }
 
-/* Specific icon colors (Points removed) */
-.reports-icon { background-color: #64b5f6; } 
-.profile-settings-icon { background-color: #ffb74d; } 
-.home-icon { background-color: #81c784; }
-
 .panel-divider {
-    height: 1px;
-    background-color: rgba(255, 255, 255, 0.15);
+    border-top: 1px solid var(--border-color);
     margin: 10px 0;
 }
 
-/* --- Detailed Links Section (Sign Out Only) --- */
-.panel-links {
-    padding: 0 20px;
-    display: flex;
-    flex-direction: column;
-}
-
-.panel-link-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 10px 0;
-    text-decoration: none;
-    color: var(--panel-text-light);
-    font-size: 1rem;
-    background: none;
-    border: none;
-    cursor: pointer;
+.panel-links .panel-link-item {
     width: 100%;
+    padding: 10px 15px;
+    border-radius: 6px;
     text-align: left;
-    transition: color 0.2s;
-}
-
-.panel-link-item:hover {
-    color: var(--primary-color);
-    background-color: rgba(255, 255, 255, 0.05);
+    transition: background-color 0.2s;
+    font-weight: 500;
 }
 
 .sign-out-item {
-    color: var(--role-admin-color);
-    /* Adjusted margin/padding since it's the only item */
-    margin-top: 5px; 
-    border-top: none; 
-    padding-top: 0;
+    background-color: var(--danger-color);
+    color: white;
 }
 .sign-out-item:hover {
-    color: #ff8a80;
+    background-color: #c23333;
+}
+.sign-out-item i {
+    margin-right: 10px;
+}
+
+/* --- Notification Panel Specific Styles --- */
+.notification-panel {
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: none;
+    padding: 0 0 10px 0;
+}
+
+.panel-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.clear-all-btn {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.clear-all-btn:hover:not(:disabled) {
+    color: var(--primary-color);
+}
+.clear-all-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.notification-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notification-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 6px;
+    background-color: var(--bg-light);
+}
+
+.overdue-alert {
+    border: 1px solid var(--danger-color);
+    background-color: var(--deadline-overdue-bg); /* Use a very light red background */
+}
+
+.alert-icon {
+    color: var(--danger-color);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.notification-content {
+    flex-grow: 1;
+    text-align: left;
+}
+
+.notification-message {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.notification-time,
+.notification-link {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.notification-link {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.no-notifications {
+    text-align: center;
+    color: var(--text-light);
+    font-style: italic;
+    padding: 10px;
 }
 
 
-/* Dynamic Animation (Unchanged) */
-@keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+/* --- Notification Panel --- */
+.notification-panel {
+    width: 350px;
+    max-height: 450px;
+    overflow-y: auto;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    padding: 15px;
+    right: 0;
+    top: calc(100% + 10px);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.3s ease;
+}
+
+.notification-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background-color: var(--bg-light);
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.notification-item.unread {
+    border-left: 4px solid var(--danger-color);
+    background-color: #fff5f5;
+}
+
+.notification-item.read {
+    opacity: 0.7;
+    border-left: 4px solid var(--text-light);
+    background-color: var(--bg-light);
+}
+
+.alert-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    color: var(--danger-color);
+    margin-top: 3px;
+}
+
+.alert-icon.read-icon {
+    color: var(--text-light);
+}
+
+.notification-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.notification-message {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-dark);
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.notification-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.mark-read-btn {
+    background: var(--primary-color);
+    border: none;
+    color: white;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.mark-read-btn:hover {
+    background: #2563eb;
+}
+
+.notification-link {
+    color: var(--primary-color);
+    font-size: 0.75rem;
+    text-decoration: none;
+}
+
+.notification-link:hover {
+    text-decoration: underline;
+}
+
+.no-notifications {
+    text-align: center;
+    font-style: italic;
+    color: var(--text-light);
+    padding: 10px 0;
 }
 
 
-/* -------------------------------------------------------------------
-   RESPONSIVENESS FIXES (Unchanged from previous fix)
-   ------------------------------------------------------------------- */
 
-@media (max-width: 768px) {
-    .nav-link {
-        display: none; 
-    }
-    .navbar-right {
-        gap: 15px;
-    }
-}
-
+/* --- Responsiveness --- */
 @media (max-width: 600px) {
     .navbar {
         padding: 10px 15px;
     }
-    
-    .user-panel {
-        width: calc(100vw - 20px); 
-        left: 10px; 
-        right: 10px; 
-        top: calc(100% + 10px);
-        margin: 0 auto;
+    .navbar-title {
+        font-size: 1.2rem;
     }
-    
-    .panel-grid {
-        grid-template-columns: 1fr; 
+    .navbar-right {
+        gap: 10px;
     }
-    
-    .panel-header {
-        text-align: center;
+    .nav-link {
+        display: none; /* Hide main links on small screens */
     }
-    .panel-user-info {
-        flex-direction: column;
-        align-items: center;
+    .user-menu-wrapper {
+        gap: 8px;
     }
-    .panel-user-info .profile-avatar-img,
-    .panel-user-info .profile-avatar-initial {
-        margin-bottom: 10px;
+
+    .user-panel,
+    .notification-panel {
+        width: 95vw;
+        right: 2.5vw;
     }
 }

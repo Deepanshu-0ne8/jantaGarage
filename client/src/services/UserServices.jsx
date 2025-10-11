@@ -43,3 +43,26 @@ export const assignReportToStaff = async (staffId, reportId) => {
         throw new Error(errorMessage);
     }
 };
+
+export const getNotifications = async () => {
+  const res = await api.get("/user/notifyForOverdue", { withCredentials: true });
+  // backend returns: { success: true, data: req.user.notifications }
+  return res.data.data || [];
+};
+export const removeNotification = async (reportId) => {
+  const res = await api.patch(`/user/notifyForOverdueRem/${reportId}`, {}, { withCredentials: true });
+  return res.data.data || []; // updated notifications array
+};
+
+export const clearAllNotifications = async (notifications = []) => {
+  for (const n of notifications) {
+    try {
+      // ignore errors for each removal to continue clearing
+      await removeNotification(n.id);
+    } catch (e) {
+        console.error("Failed to remove notification:", e);
+    }
+  }
+  // finally fetch what's left (should be empty)
+  return await getNotifications();
+};
