@@ -1,6 +1,7 @@
 import React from "react";
 import "./landing.css";
 import { Link } from "react-router-dom";
+import logo from "../assets/logo.png"; // Ensure this path is correct
 
 const Landing = () => {
   return (
@@ -10,7 +11,7 @@ const Landing = () => {
         <div className="nav-left">
           <div className="nav-logo">
             {/* Replace /assets/logo.png with your actual logo path */}
-            <img src="../assets/logo.png" alt="Logo" className="logo-image"/>
+            <img src={logo} alt="Logo" className="logo-image"/>
             <span className="logo-text">Janta Garage</span>
           </div>
         </div>

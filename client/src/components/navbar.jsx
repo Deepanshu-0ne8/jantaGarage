@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/authContext";
-import { useSocket } from "../context/SocketContext"; // Import useSocket hook
-import { getNotifications, removeNotification } from "../services/UserServices"; // Import API services
+import { useSocket } from "../context/SocketContext"; 
+import { getNotifications, removeNotification, clearAllNotifications } from "../services/UserServices"; 
 import logo from "../assets/logo.png";
 import "./navbar.css";
 
 const Navbar = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
-  const socket = useSocket(); // Get the active socket instance from context
+  const socket = useSocket(); 
 
   const [isPanelOpen, setIsPanelOpen] = useState(false); 
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
@@ -28,53 +28,42 @@ const Navbar = () => {
 
   const handleProfileClick = () => {
     setIsPanelOpen(prev => !prev);
-    setIsNotificationPanelOpen(false); // Close notifications when opening profile
+    setIsNotificationPanelOpen(false); 
   };
   
   const handleNotificationClick = () => {
     setIsNotificationPanelOpen(prev => !prev);
-    setIsPanelOpen(false); // Close profile panel when opening notifications
+    setIsPanelOpen(false); 
     if (!isNotificationPanelOpen) {
-        setUnreadCount(0); // Clear badge count when panel is opened
+        setUnreadCount(0); 
     }
   };
 
-  
   // --- Notification Management Functions ---
 
-  // Fetches initial notifications from DB on mount
   const fetchNotifications = async () => {
     try {
       if (!user) return;
-      // Fetch notifications currently stored in the user document
       const data = await getNotifications(); 
       setNotifications(data);
-      // Count total notifications as unread since backend handles state based on existence
+      // Assuming all fetched notifications count towards the badge for now
+      // If you implement a read/unread toggle later, you can filter by !n.read
       setUnreadCount(data.length); 
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
     }
   };
 
-  const reportDetail = () => {
-    setIsNotificationPanelOpen(false);
-    <Navigate to={`/report/${notifications.id}`} />;
-  };
-
-  // Function to remove a single notification (used by button and link click)
-  const handleRemoveNotification = async (id, isNavigating = false) => {
+  // ⚠️ STRICTLY uses notificationId for deletion as per the new schema
+  const handleRemoveNotification = async (notificationId) => {
     try {
-      // Optimistic UI update before calling API
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      // Optimistic UI update: Filter out using notificationId
+      setNotifications(prev => prev.filter(n => n.notificationId !== notificationId));
       setUnreadCount(prev => Math.max(0, prev - 1));
 
-      // Call API to remove from DB (using the Report ID)
-      await removeNotification(id);
+      // Call API to remove from DB using the specific Notification ID
+      await removeNotification(notificationId);
       
-      // If navigating, allow the navigation to proceed
-      if (isNavigating) {
-        setIsNotificationPanelOpen(false);
-      }
     } catch (err) {
       console.error("Failed to remove notification:", err);
       // Re-fetch if API call fails to restore state integrity
@@ -82,78 +71,67 @@ const Navbar = () => {
     }
   };
 
-  // Function to clear all visible notifications
   const handleClearAll = async (e) => {
     e.stopPropagation();
     try {
-        const ids = notifications.map(n => n.id);
-        
         // Optimistic UI update
         setNotifications([]);
         setUnreadCount(0);
         setIsNotificationPanelOpen(false);
 
-        // Batch remove calls 
-        const removePromises = ids.map(id => removeNotification(id).catch(e => console.error(`Failed to clear ${id}`)));
-        await Promise.all(removePromises);
+        // Call the single removeAll API
+        await clearAllNotifications();
         
-        // Final verification fetch to ensure all are gone
-        await fetchNotifications(); 
     } catch (e) {
         console.error("Error during clear all:", e);
+        fetchNotifications(); // Revert state if it fails
     }
   };
-
 
   // --- Fetch and Socket Listeners (Mount Logic) ---
 
   useEffect(() => {
     fetchNotifications();
-  }, [user]); // Fetch initial notifications when user context is ready
+  }, [user]); 
 
   useEffect(() => {
     if (!user || !socket) return;
 
     const handleOverdueReport = (payload) => {
+      // Create a temporary object matching your new mongoose schema structure
       const newNotification = {
-        id: payload.id,
+        notificationId: `temp-${Date.now()}`, // Temporary ID until page refreshes and pulls real ObjectId
+        reportId: payload.id,
         message: `Report #${payload.id.substring(0, 8)} is now OVERDUE!`,
-        time: new Date().toLocaleString(),
+        time: new Date().toISOString(),
+        read: false
       };
       
-      // Update state for real-time visibility
       setNotifications(prev => [newNotification, ...prev]);
       setUnreadCount(prev => prev + 1);
-      
-      console.log("🔔 NOTIFICATION RECEIVED:", payload.title);
     };
 
-    // 1. Set up listener FIRST
     socket.on("reportOverdue", handleOverdueReport);
 
-    // 2. Register User ID SECOND (ensures listener is active)
     const registerUser = () => {
         socket.emit("registerUser", user._id);
-        console.log(`📡 Emitting registerUser ${user._id} to join room.`);
     };
 
     if (socket.connected) {
       registerUser();
     } else {
-      // Fallback registration if socket connection is delayed
       socket.once("connect", registerUser);
     }
 
     return () => {
         socket.off("reportOverdue", handleOverdueReport);
-        socket.off("connect", registerUser); // Clean up connect listener too
+        socket.off("connect", registerUser); 
     }
   }, [user, socket]);
 
   // --- Click Outside/Escape Logic ---
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Check profile panel closure
       if (
         isPanelOpen &&
         panelRef.current && 
@@ -162,7 +140,6 @@ const Navbar = () => {
         !profileButtonRef.current.contains(event.target) 
       ) setIsPanelOpen(false);
 
-      // Check notification panel closure
       if (
         isNotificationPanelOpen &&
         notificationPanelRef.current &&
@@ -208,31 +185,34 @@ const Navbar = () => {
         
         <div className="notification-list">
             {notifications.length > 0 ? (
-                notifications.map((n, index) => (
-                    // NOTE: Keying by index is discouraged, but necessary here since the 'id' field is an ObjectId that may not change if the object is reused. 
-                    // Using n.id as a string is the best option for persistence.
+                notifications.map((n) => (
                     <div
-                      key={n.id} 
-                      className="notification-item unread"
+                      key={n.notificationId} 
+                      className={`notification-item ${n.read ? 'read' : 'unread'}`}
                     >
                         <i className={`fas fa-exclamation-circle alert-icon`}></i>
                         <div className="notification-content">
                             <p className="notification-message">{n.message}</p>
-                            <span className="notification-time">{new Date(n.time).toLocaleTimeString()}</span>
+                            <span className="notification-time">
+                              {n.time ? new Date(n.time).toLocaleString() : 'Just now'}
+                            </span>
                             <div className="notification-actions">
                                 <button 
                                   className="mark-read-btn" 
                                   onClick={(e) => {
                                       e.stopPropagation();
-                                      handleRemoveNotification(n.id);
+                                      handleRemoveNotification(n.notificationId); // Uses notificationId
                                   }}
                                 >
-                                  mark as read
+                                  remove
                                 </button>
                                 <Link 
-                                    to={`/reportDetail/${n.id}`} 
+                                    to={`/reportDetail/${n.reportId}`} // Uses reportId for routing
                                     className="notification-link"
-                                    onClick={ handleRemoveNotification(n.id) } // Remove notification upon viewing report
+                                    onClick={() => {
+                                      handleRemoveNotification(n.notificationId); // Uses notificationId
+                                      setIsNotificationPanelOpen(false);
+                                    }} 
                                 >
                                     View Report »
                                 </Link>

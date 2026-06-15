@@ -1,6 +1,6 @@
 import express from 'express';
 import { authorize } from '../middlewares/auth.middleware.js';
-import { assignReportToStaff, getAssignedReports, getdepartmentalReport, getnotifyOnOverdueReports, getProfile, getReportsForVerification, notifyOnOverdueReportsRemove, removeDp, updateProfile } from '../controllers/user.controllers.js';
+import { assignReportToStaff, getAssignedReports, getdepartmentalReport, getNotifications, getProfile, getReportsForVerification, removeNotification, removeDp, updateProfile, removeAllNotifications } from '../controllers/user.controllers.js';
 import { upload } from '../middlewares/multer.middleware.js';
 // import { notifyOnOverdueReports } from '../controllers/report.controllers.js';
 
@@ -20,8 +20,10 @@ userRouter.patch('/assignReport', authorize, assignReportToStaff);
 
 userRouter.get('/assignedReports', authorize, getAssignedReports);
 
-userRouter.get('/notifyForOverdue', authorize, getnotifyOnOverdueReports);
+userRouter.get('/notifications', authorize, getNotifications);
 
-userRouter.patch('/notifyForOverdueRem/:id', authorize, notifyOnOverdueReportsRemove);
+userRouter.patch('/remove/:notificationId', authorize, removeNotification);
+
+userRouter.patch('/removeAll', authorize, removeAllNotifications);
 
 export default userRouter;

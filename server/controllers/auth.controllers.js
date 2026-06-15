@@ -140,6 +140,8 @@ export const signIn = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
+        //  console.log("SignIn attempt for email:", email); // Debug log
+
         // 1. Explicitly select the password field if it's excluded by default in your schema.
         const user = await User.findOne({ email }).select('+password');
 

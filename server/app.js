@@ -24,7 +24,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/reports', reportRouter);
-app.use("/api/reports", reportRoutes);
 
 
 export default app;

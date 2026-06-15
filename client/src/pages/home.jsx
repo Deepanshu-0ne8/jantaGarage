@@ -225,13 +225,14 @@ const Home = () => {
     }
   };
   
-  // NEW: Sort active reports based on updated date/realTimeKey
+// NEW: Sort active reports based on updated date/realTimeKey
   const sortedActiveReports = useMemo(() => {
-      return reports.sort((a, b) => {
+      // FIX: Added [...reports] to prevent mutating the original state array
+      return [...reports].sort((a, b) => {
           // Primary Sort: UpdatedAt/CreatedAt (Newest first)
           return new Date(b.updatedAt) - new Date(a.updatedAt);
       });
-  }, [reports, realTimeKey]); // Dependency on realTimeKey ensures refresh on deadline
+  }, [reports, realTimeKey]);
 
   const isAdmin = user?.role === "admin";
   const isStaff = user?.role === "staff";

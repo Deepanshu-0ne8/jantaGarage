@@ -7,7 +7,7 @@ import { createReport,
         getAllUnAssignedReports,
         getReportById,
         getReportsByUserId,
-        notifyOnOverdueReports,
+        // notifyOnOverdueReports,
         rejectResolution,
         updateReportStatusTOInProgress, 
         updateReportStatusToResolved,
@@ -47,7 +47,7 @@ reportRouter.patch('/reject/:id', authorize, rejectResolution);
 
 reportRouter.get('/assignedReports', authorize, getAllAssignedReportsByAdmin);
 
-reportRouter.patch('/notifyForOverdue/:id', authorize, notifyOnOverdueReports);
+// reportRouter.patch('/notifyForOverdue/:id', authorize, notifyOnOverdueReports);
 
 reportRouter.get("/download-csv", downloadReportsCSV);
 

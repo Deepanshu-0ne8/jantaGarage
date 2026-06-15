@@ -213,6 +213,7 @@ export const getdepartmentalReport = async (req, res, next) => {
                 message: 'No reports found for this user'
             });
         }
+        // console.log(reports);
         res.status(200).json({
             success: true,
             data: reports
@@ -246,37 +247,6 @@ export const getReportsForVerification = async (req, res, next) => {
         next(error)
     }
 }
-
-
-export const rejectVerification = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const report = await Report.findById(id);
-        if(!report) {
-            return res.status(404).json({
-                status: 'fail',
-                message: 'Report not found'
-            });
-        }
-        report.status = "OPEN";
-        report.isNotifiedTOResolved = false;
-        await report.save();
-
-        await User.findByIdAndUpdate(report.createdBy, { $pull: { reportsForVerification: id } });
-
-        await transporter.sendMail({
-            from: 'patidardeepanshu910@gmail.com',
-            to: user.email,
-            subject: 'Problem Resolved verification',
-            text: `Your report with the title: ${report.title} has been marked as resolved. Please verify the resolution at your earliest convenience.`
-        });
-
-    } catch (error) {
-        next(error)
-    }
-}
-
-
 
 export const assignReportToStaff = async (req, res, next) => {
     try {
@@ -336,6 +306,10 @@ export const assignReportToStaff = async (req, res, next) => {
       await report.save();
 
       staff.reportsAssigned.push(report._id);
+      staff.notifications.push({
+        reportId: report._id,
+        message: `You have been assigned a new report with the title: ${report.title}.`,
+      });
       await staff.save();
 
       await transporter.sendMail({
@@ -397,7 +371,7 @@ export const getAssignedReports = async (req, res, next) => {
     }
 }
 
-export const getnotifyOnOverdueReports = async (req, res, next) => {
+export const getNotifications = async (req, res, next) => {
   try {
     res.status(200).json({
       success: true,
@@ -408,32 +382,31 @@ export const getnotifyOnOverdueReports = async (req, res, next) => {
   }
 }
 
-export const notifyOnOverdueReportsRemove = async (req, res, next) => {
+export const removeNotification = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    if(!id) {
+    const { notificationId } = req.params;
+    
+    if(!notificationId) {
       return res.status(400).json({
         success: false,
-        message: 'Report ID is required'
-      });
-    }
-    
-    const report = await Report.findById(id);
-    if(!report) {
-      return res.status(404).json({
-        success: false,
-        message: 'Report not found'
+        message: 'Notification ID is required'
       });
     }
 
-    const initialLength = req.user.notifications.length;
-    req.user.notifications = req.user.notifications.filter(n => n.id.toString() !== id.toString());
-    if(req.user.notifications.length === initialLength) {
+    const notificationIndex = req.user.notifications.findIndex(
+      (notification) => notification.notificationId.toString() === notificationId
+    );
+
+    if (notificationIndex === -1) {
       return res.status(404).json({
         success: false,
-        message: 'No matching notification found'
+        message: 'Notification not found'
       });
     }
+
+    req.user.notifications.splice(notificationIndex, 1);
+
+    
     await req.user.save();
     res.status(200).json({
       success: true,
@@ -445,5 +418,18 @@ export const notifyOnOverdueReportsRemove = async (req, res, next) => {
   }
 }
 
+export const removeAllNotifications = async (req, res, next) => {
+  try {
+    req.user.notifications = [];
+    await req.user.save();
+    res.status(200).json({
+      success: true,
+      message: 'All notifications removed successfully',
+      data: []
+    })
+  } catch (error) {
+    next(error)
+  }
+}
 
 

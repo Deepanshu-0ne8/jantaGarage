@@ -35,14 +35,23 @@ export const createReport = async (req, res, next) => {
 
           const admins = await User.find({ role: 'admin' });
 
-        admins.forEach(async (element) => {
+        admins.forEach(async (admin) => {
           await transporter.sendMail({
             from: 'patidardeepanshu910@gmail.com',
-            to: element.email,
+            to: admin.email,
             subject: 'New Report Created',
             text: `A new report has been created with the title: ${report.title}. Please review it at your earliest convenience.`
         });
+
+        admin.notifications.push({
+            reportId: report._id,
+            message: `A new report has been created with the title: ${report.title}. Please review it at your earliest convenience.`
         });
+        await admin.save();
+
+        });
+
+
 
             return res.status(200).json({
                 status: 'success',
@@ -84,13 +93,18 @@ export const createReport = async (req, res, next) => {
         await report.save();
 
         const admins = await User.find({ role: 'admin' });        
-        admins.forEach(async (element) => {
+        admins.forEach(async (admin) => {
           await transporter.sendMail({
             from: 'patidardeepanshu910@gmail.com',
-            to: element.email,
+            to: admin.email,
             subject: 'New Report Created',
             text: `A new report has been created with the title: ${report.title}. Please review it at your earliest convenience.`
         });
+        admin.notifications.push({
+            reportId: report._id,
+            message: `A new report has been created with the title: ${report.title}. Please review it at your earliest convenience.`
+        });
+        await admin.save();
         });
 
         // You might want to remove the temporary file from the local server after successful upload.
@@ -253,6 +267,10 @@ export const updateReportStatusTOResolvedNotifiction = async (req, res, next) =>
         await report.save();
 
         user.reportsForVerification.push(report._id);
+        user.notifications.push({
+            reportId: report._id,
+            message: `Your report with the title: ${report.title} has been marked as resolved. Please verify the resolution at your earliest convenience.`
+        });
         await user.save();
       
         return res.status(200).json({
@@ -374,8 +392,28 @@ export const updateReportStatusToResolved = async (req, res, next) => {
             subject: 'Problem Resolved verification done by Creator',
             text: `The creator of the report with the title: ${report.title} has verified the resolution. Thank you for your efforts!`
         });
+        staff.notifications.push({
+            reportId: report._id,
+            message: `The creator of the report with the title: ${report.title} has verified the resolution. Thank you for your efforts!`
+        });
+        await staff.save();
 
         }
+
+        const admins = await User.find({ role: 'admin' });
+        admins.forEach(async (admin) => {
+            await transporter.sendMail({
+                from: 'patidardeepanshu910@gmail.com',
+                to: admin.email,
+                subject: 'Report Resolved',
+                text: `A report with the title: ${report.title} has been marked as resolved. Please verify the resolution at your earliest convenience.`
+            });
+            admin.notifications.push({
+                reportId: report._id,
+                message: `A report with the title: ${report.title} has been marked as resolved. Please verify the resolution at your earliest convenience.`
+            });
+            await admin.save();
+        });
 
         res.status(200).json({
             status: 'success',
@@ -435,6 +473,11 @@ export const rejectResolution = async (req, res, next) => {
             subject: 'Problem Resolved verification Rejected by Creator',
             text: `The creator of the report with the title: ${report.title} has rejected the resolution. Please look into it again.`
         });
+        staff.notifications.push({
+            reportId: report._id,
+            message: `The creator of the report with the title: ${report.title} has rejected the resolution. Please look into it again.`
+        });
+        await staff.save();
 
         }
   
@@ -477,56 +520,49 @@ export const getAllAssignedReportsByAdmin = async (req, res, next) => {
     }
 }
 
-export const notifyOnOverdueReports = async (req, res, next) => {
-    try {
-          const id = req.params;
-        const report = await Report.findById(id);
-        if (!report) {
-            return res.status(404).json({
-                status: 'fail',
-                message: 'Report not found'
-            });
-        }
+// export const notifyOnOverdueReports = async (req, res, next) => {
+//     try {
+//           const id = req.params;
+//         const report = await Report.findById(id);
+//         if (!report) {
+//             return res.status(404).json({
+//                 status: 'fail',
+//                 message: 'Report not found'
+//             });
+//         }
 
-        if (report.status === 'Resolved') {
-            return res.status(400).json({
-                status: 'fail',
-                message: "Resolved reports cannot be overdue."
-            });
-        }
+//         if (report.status === 'Resolved') {
+//             return res.status(400).json({
+//                 status: 'fail',
+//                 message: "Resolved reports cannot be overdue."
+//             });
+//         }
 
-        const nowTime = new Date().getTime();
-        const deadlineTime = new Date(report.deadline).getTime();
+//         const nowTime = new Date().getTime();
+//         const deadlineTime = new Date(report.deadline).getTime();
         
-        if (nowTime <= deadlineTime) {
-            return res.status(400).json({
-                status: 'fail',
-                message: "Report is not overdue yet."
-            });
-        }
-        await transporter.sendMail({
-            from: 'patidardeepanshu910@gmail.com',
-            to: report.assignedTo.email,
-            subject: 'Report overdue notification',
-            text: `The report with the title: ${report.title} assigned to you is overdue. Please take immediate action to resolve it.`
-        });
-        
-        await transporter.sendMail({
-            from: 'patidardeepanshu910@gmail.com',
-            to: report.assignedBy.email,
-            subject: 'Problem Resolved verification Rejected by Creator',
-            text: `The creator of the report with the title: ${report.title} has rejected the resolution. Please look into it again.`
-        });
+//         if (nowTime <= deadlineTime) {
+//             return res.status(400).json({
+//                 status: 'fail',
+//                 message: "Report is not overdue yet."
+//             });
+//         }
+//         await transporter.sendMail({
+//             from: 'patidardeepanshu910@gmail.com',
+//             to: report.assignedTo.email,
+//             subject: 'Report overdue notification',
+//             text: `The report with the title: ${report.title} assigned to you is overdue. Please take immediate action to resolve it.`
+//         });
 
-        res.status(200).json({
-            status: 'success',
-            message: 'Overdue notification sent successfully',
-        });
-  }
-catch (error) {
-        next(error);
-    }
-}
+//         res.status(200).json({
+//             status: 'success',
+//             message: 'Overdue notification sent successfully',
+//         });
+//   }
+// catch (error) {
+//         next(error);
+//     }
+// }
 // export const deleteReport = async (req, res, next) => {
 //     try {
 //         const { id } = req.params;

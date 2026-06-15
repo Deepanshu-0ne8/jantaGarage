@@ -183,7 +183,7 @@ const HeatMap = () => {
 
         try {
             const map = window.L.map(mapRef.current, {
-                zoomControl: false 
+                zoomControl: false,
             }).setView([20.5937, 78.9629], 5);
 
             window.L.control.zoom({
@@ -256,18 +256,17 @@ const HeatMap = () => {
         );
     }
     
-    const isAuthorized = user && (user.role === 'Admin' || user.role === 'Staff' || user.role === 'citizen');
-    if (!isAuthorized) {
-         return (
-            <>
-                <Navbar />
-                <div className="map-page-container access-denied">
-                    <h2>Access Denied</h2>
-                    <p>You must be a Staff or Admin user to view the full system map.</p>
-                </div>
-            </>
-        );
-    }
+    // const isAuthorized = user && (user.role === 'Admin' || user.role === 'Staff' || user.role === 'Citizen');
+    // if (!isAuthorized) {
+    //      return (
+    //         <>
+    //             <Navbar />
+    //             <div className="map-page-container access-denied">
+    //                 <h2>Access Denied</h2>
+    //             </div>
+    //         </>
+    //     );
+    // }
 
     return (
         <>

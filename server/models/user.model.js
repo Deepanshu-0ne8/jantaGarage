@@ -117,22 +117,33 @@ const userSchema = new mongoose.Schema(
       },
     },
     notifications: {
-      type: [
-        {
-          id: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Report",
-          },
-          message: String,
-          time: String,
-          read: {
-            type: Boolean,
-            default: false,
-          },
+    type: [
+      {
+        notificationId: {
+          type: mongoose.Schema.Types.ObjectId,
+          default: () => new mongoose.Types.ObjectId(),
         },
-      ],
-      default: [],
-    },
+
+        reportId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Report",
+        },
+
+        message: String,
+
+        time: {
+          type: Date,
+          default: Date.now,
+        },
+
+        read: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
+    default: [],
+  },
   },
   { timestamps: true }
 );
