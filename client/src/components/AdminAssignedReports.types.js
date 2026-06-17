@@ -40,35 +40,10 @@ const labelize = (raw) => {
     .join(" ");
 };
 
-// Helper to determine deadline chip class based on remaining days/time (Full Timestamp Check)
-const getDeadlineClass = (deadlineDate, status) => {
-    // FIX: If the report is resolved or closed, return no deadline class immediately.
-    if (status === 'Resolved') {
-        return '';
-    }
-
-    if (!deadlineDate) return 'deadline-none';
-
-    const nowTime = new Date().getTime();
-    const deadlineTime = new Date(deadlineDate).getTime();
-    
-    // 1. Check for Overdue status using full timestamp
-    if (nowTime > deadlineTime) return 'deadline-overdue';
-
-    const msInDay = 1000 * 60 * 60 * 24;
-    const diffDays = (deadlineTime - nowTime) / msInDay;
-
-    // 2. Check for critical/urgent status
-    if (diffDays <= 1) return 'deadline-critical'; // Less than or equal to 1 day remaining
-    if (diffDays <= 3) return 'deadline-urgent';   // Less than or equal to 3 days remaining
-    return 'deadline-normal';
-};
-
 export { 
     SEVERITY_ORDER, 
     SEVERITY_OPTIONS, 
     STATUS_OPTIONS, 
     DEPARTMENT_OPTIONS, 
-    labelize, 
-    getDeadlineClass 
+    labelize
 };

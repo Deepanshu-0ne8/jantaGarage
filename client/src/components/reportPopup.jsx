@@ -108,7 +108,7 @@ const departmentsList = [
 const severityLevels = ["Low", "Medium", "High"];
 
 // --- GEMINI API CONFIGURATION ---
-const apiKey = "AIzaSyDzXELFXKY6Cf9-IKA_aIAjtzvjaEJeBPc"; 
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
 const fileToBase64 = (file) => {

@@ -8,40 +8,34 @@ import Navbar from "../components/navbar";
 
 Modal.setAppElement("#root");
 
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+
 const Reports = () => {
-  const [reports, setReports] = useState([]);
-  const [stats, setStats] = useState({
-    total: 0,
-    resolved: 0,
-    pending: 0,
-    inProgress: 0,
-  });
   const [selectedReport, setSelectedReport] = useState(null);
 
-  useEffect(() => {
-    fetchReports();
-  }, []);
+  const { data: reports = [], isLoading } = useQuery({
+    queryKey: ["reports", "all"],
+    queryFn: async () => {
+      const res = await api.get("/reports");
+      return res.data.data || [];
+    },
+  });
 
-  const fetchReports = async () => {
-    try {
-      const res = await api.get("/reports"); // your backend endpoint
-      setReports(res.data.data);
+  const stats = useMemo(() => {
+    const totalReports = reports.length;
+    const resolvedReports = reports.filter(r => r.status === "Resolved").length;
+    const inProgressReports = reports.filter(r => r.status === "IN_PROGRESS").length;
+    const pendingReports = totalReports - resolvedReports - inProgressReports;
 
-      const totalReports = res.data.data.length;
-      const resolvedReports = res.data.data.filter(r => r.status === "Resolved").length;
-      const inProgressReports = res.data.data.filter(r => r.status === "IN_PROGRESS").length;
-      const pendingReports = totalReports - resolvedReports - inProgressReports;
+    return {
+      total: totalReports,
+      resolved: resolvedReports,
+      pending: pendingReports,
+      inProgress: inProgressReports,
+    };
+  }, [reports]);
 
-      setStats({
-        total: totalReports,
-        resolved: resolvedReports,
-        pending: pendingReports,
-        inProgress: inProgressReports,
-      });
-    } catch (error) {
-      console.error("Error fetching reports:", error);
-    }
-  };
 
   const pieData = [
     { name: "Resolved", value: stats.resolved },

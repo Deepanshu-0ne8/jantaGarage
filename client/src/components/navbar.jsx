@@ -5,21 +5,37 @@ import { useSocket } from "../context/SocketContext";
 import { getNotifications, removeNotification, clearAllNotifications } from "../services/UserServices"; 
 import logo from "../assets/logo.png";
 import "./navbar.css";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const Navbar = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const socket = useSocket(); 
+  const queryClient = useQueryClient();
 
   const [isPanelOpen, setIsPanelOpen] = useState(false); 
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const panelRef = useRef(null);
   const profileButtonRef = useRef(null);
   const notificationPanelRef = useRef(null);
   const notificationButtonRef = useRef(null);
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      if (!user) return [];
+      return getNotifications();
+    },
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (!isNotificationPanelOpen) {
+      setUnreadCount(notifications.length);
+    }
+  }, [notifications, isNotificationPanelOpen]);
 
   const handleLogout = async () => {
     await logout();
@@ -39,95 +55,54 @@ const Navbar = () => {
     }
   };
 
-  // --- Notification Management Functions ---
+  // --- Notification Management Mutations ---
 
-  const fetchNotifications = async () => {
-    try {
-      if (!user) return;
-      const data = await getNotifications(); 
-      setNotifications(data);
-      // Assuming all fetched notifications count towards the badge for now
-      // If you implement a read/unread toggle later, you can filter by !n.read
-      setUnreadCount(data.length); 
-    } catch (err) {
-      console.error("Failed to fetch notifications:", err);
-    }
-  };
+  const removeNotificationMutation = useMutation({
+    mutationFn: removeNotification,
+    onMutate: async (notificationId) => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] });
+      const previousNotifications = queryClient.getQueryData(["notifications"]);
+      queryClient.setQueryData(["notifications"], (old) => old?.filter(n => n.notificationId !== notificationId) || []);
+      return { previousNotifications };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousNotifications) {
+        queryClient.setQueryData(["notifications"], context.previousNotifications);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
 
-  // ⚠️ STRICTLY uses notificationId for deletion as per the new schema
+  const clearAllMutation = useMutation({
+    mutationFn: clearAllNotifications,
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] });
+      const previousNotifications = queryClient.getQueryData(["notifications"]);
+      queryClient.setQueryData(["notifications"], []);
+      return { previousNotifications };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousNotifications) {
+        queryClient.setQueryData(["notifications"], context.previousNotifications);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
   const handleRemoveNotification = async (notificationId) => {
-    try {
-      // Optimistic UI update: Filter out using notificationId
-      setNotifications(prev => prev.filter(n => n.notificationId !== notificationId));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-
-      // Call API to remove from DB using the specific Notification ID
-      await removeNotification(notificationId);
-      
-    } catch (err) {
-      console.error("Failed to remove notification:", err);
-      // Re-fetch if API call fails to restore state integrity
-      fetchNotifications(); 
-    }
+    removeNotificationMutation.mutate(notificationId);
   };
 
   const handleClearAll = async (e) => {
     e.stopPropagation();
-    try {
-        // Optimistic UI update
-        setNotifications([]);
-        setUnreadCount(0);
-        setIsNotificationPanelOpen(false);
-
-        // Call the single removeAll API
-        await clearAllNotifications();
-        
-    } catch (e) {
-        console.error("Error during clear all:", e);
-        fetchNotifications(); // Revert state if it fails
-    }
+    setIsNotificationPanelOpen(false);
+    clearAllMutation.mutate();
   };
 
-  // --- Fetch and Socket Listeners (Mount Logic) ---
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [user]); 
-
-  useEffect(() => {
-    if (!user || !socket) return;
-
-    const handleOverdueReport = (payload) => {
-      // Create a temporary object matching your new mongoose schema structure
-      const newNotification = {
-        notificationId: `temp-${Date.now()}`, // Temporary ID until page refreshes and pulls real ObjectId
-        reportId: payload.id,
-        message: `Report #${payload.id.substring(0, 8)} is now OVERDUE!`,
-        time: new Date().toISOString(),
-        read: false
-      };
-      
-      setNotifications(prev => [newNotification, ...prev]);
-      setUnreadCount(prev => prev + 1);
-    };
-
-    socket.on("reportOverdue", handleOverdueReport);
-
-    const registerUser = () => {
-        socket.emit("registerUser", user._id);
-    };
-
-    if (socket.connected) {
-      registerUser();
-    } else {
-      socket.once("connect", registerUser);
-    }
-
-    return () => {
-        socket.off("reportOverdue", handleOverdueReport);
-        socket.off("connect", registerUser); 
-    }
-  }, [user, socket]);
 
   // --- Click Outside/Escape Logic ---
   useEffect(() => {

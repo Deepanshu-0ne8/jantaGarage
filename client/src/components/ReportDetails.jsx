@@ -20,36 +20,20 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleString('en-GB');
 };
 
+import { useQuery } from '@tanstack/react-query';
+
 const ReportDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: report = null, isLoading: loading, error: queryError } = useQuery({
+    queryKey: ["reports", "detail", id],
+    queryFn: () => getReportById(id),
+    enabled: !!id,
+  });
 
-  // --- Fetch Report Details ---
-  const fetchReport = useCallback(async (reportId) => {
-    if (!reportId) {
-      setError("No Report ID provided.");
-      setLoading(false);
-      return;
-    }
+  const error = queryError ? (queryError.message || "Could not load report details.") : null;
 
-    try {
-      setLoading(true);
-      const fetchedReport = await getReportById(reportId);
-      setReport(fetchedReport);
-    } catch (err) {
-      setError(err.message || "Could not load report details.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchReport(id);
-  }, [id, fetchReport]);
 
   // --- Render Guards ---
   if (loading)

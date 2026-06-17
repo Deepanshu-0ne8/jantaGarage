@@ -35,24 +35,7 @@ const DEPARTMENT_OPTIONS = [
   "Public Grievance & Complaint Cell",
 ];
 
-// Helper to determine deadline chip status, comparing the full timestamp (date + time)
-const getDeadlineStatus = (deadlineDate) => {
-    if (!deadlineDate) return 'none';
-
-    const nowTime = new Date().getTime();
-    const deadlineTime = new Date(deadlineDate).getTime();
-    
-    const msInDay = 1000 * 60 * 60 * 24;
-
-    // 1. Check if the current time has passed the deadline time
-    if (nowTime > deadlineTime) return 'overdue';
-
-    // 2. Calculate remaining time for 'duesoon'
-    const diffDays = (deadlineTime - nowTime) / msInDay;
-
-    if (diffDays <= 3) return 'duesoon'; // Due in 3 days or less
-    return 'normal';
-};
+// Overdue status is handled via database and Socket.IO events.
 
 
 const AttachmentModal = ({ imageUrl, onClose }) => {
@@ -173,9 +156,7 @@ const UnassignedReportItem = ({ report }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // New: Deadline Status and Text calculation
-  const deadlineStatus = getDeadlineStatus(report.deadline);
-  // Using toLocaleString() to show both date and time in the details section
+  const isOverdue = !!report.isOverdue;
   const deadlineText = report.deadline ? new Date(report.deadline).toLocaleDateString('en-GB') : 'N/A';
   const fullDeadlineText = report.deadline ? new Date(report.deadline).toLocaleString('en-GB') : 'N/A';
   
@@ -195,8 +176,7 @@ const UnassignedReportItem = ({ report }) => {
 
   const severityClass = reportDetails.severity?.toLowerCase() || 'low';
   const attachmentCount = reportDetails.imageUrl ? 1 : 0;
-  // Apply conditional class to the card for overdue visual tag
-  const cardClass = `report-card unassigned-card ${deadlineStatus === 'overdue' ? 'overdue-card' : ''}`;
+  const cardClass = `report-card unassigned-card ${isOverdue ? 'overdue-card' : ''}`;
 
 
   const handleSummaryClick = (e) => {
@@ -213,12 +193,10 @@ const UnassignedReportItem = ({ report }) => {
           <h3 className="report-title">{reportDetails.title || 'Untitled Report'}</h3>
         </div>
         <div className="report-meta">
-          {/* NEW: Overdue Tag */}
-          {deadlineStatus === 'overdue' && (
+          {isOverdue && (
               <span className="deadline-tag overdue-tag">OVERDUE</span>
           )}
-          {/* NEW: Deadline Display in Summary (Date only for brevity) */}
-          <span className={`report-deadline deadline-${deadlineStatus}`}>{deadlineText}</span>
+          <span className="report-deadline">{deadlineText}</span>
           <span className={`report-severity severity-${severityClass}`}>{reportDetails.severity}</span>
           <i className={`fas fa-chevron-right chevron ${isOpen ? 'open' : ''}`}></i>
         </div>
@@ -234,14 +212,12 @@ const UnassignedReportItem = ({ report }) => {
 
             <p className="detail-field half-width">
               <span className="detail-label">Severity:</span>
-              {/* FIX: The standardized class "report-severity" is added here to ensure full styling */}
               <span className={`report-severity severity-${severityClass}`}>{reportDetails.severity}</span>
             </p>
             
-            {/* NEW: Deadline in Details (Showing full date and time) */}
             <p className="detail-field full-width">
               <span className="detail-label">Target Deadline:</span>
-              <span className={`deadline-text deadline-${deadlineStatus}`}>{fullDeadlineText}</span>
+              <span className="deadline-text">{fullDeadlineText}</span>
             </p>
 
             <p className="detail-field full-width">
@@ -315,73 +291,23 @@ const UnassignedReportItem = ({ report }) => {
 };
 
 
+import { useQuery } from '@tanstack/react-query';
+
 const UnassignedReportsPage = () => {
   const { user, loading: authLoading } = useAuth();
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  // State to force re-evaluation when a deadline passes
-  const [realTimeKey, setRealTimeKey] = useState(0); 
-
   const [filters, setFilters] = useState({ severity: '', status: '', departments: [] });
 
   const isAuthorized = user?.role === 'admin';
 
-  const fetchReports = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const { data: reports = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey: ["reports", "unassigned"],
+    queryFn: getUnassignedReports,
+    enabled: !authLoading && !!user && isAuthorized,
+  });
 
-    try {
-      const fetchedReports = await getUnassignedReports();
-      setReports(fetchedReports);
-    } catch (err) {
-      setError(err.message);
-      setReports([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const error = queryError ? queryError.message : null;
 
-  useEffect(() => {
-    if (authLoading || !user) return;
-    if (isAuthorized) fetchReports();
-    else setLoading(false);
-  }, [user, authLoading, isAuthorized, fetchReports]);
-  
-  // --- REAL-TIME DEADLINE CHECKER ---
-  useEffect(() => {
-      let timer;
-      const nowTime = new Date().getTime();
-      
-      // 1. Find the next relevant deadline time among ALL reports
-      const nextDeadlineTime = reports.reduce((minTime, report) => {
-          if (!report.deadline) return minTime;
-          
-          const deadlineTime = new Date(report.deadline).getTime();
-          
-          // Only consider future deadlines
-          if (deadlineTime > nowTime && deadlineTime < minTime) {
-              return deadlineTime;
-          }
-          return minTime;
-      }, Infinity);
-
-      if (nextDeadlineTime !== Infinity) {
-          // Calculate delay until that specific moment (plus 1 second buffer)
-          const delay = nextDeadlineTime - nowTime + 1000;
-          
-          timer = setTimeout(() => {
-              // Force re-evaluation of report statuses by updating the key
-              setRealTimeKey(prev => prev + 1); 
-          }, delay);
-      }
-      
-      return () => clearTimeout(timer);
-  }, [reports, realTimeKey]); // realTimeKey added to dependency array to reset timer after a deadline passes
-
-
-  // Filter, Split, and Sort reports into two sections (runs when reports, filters, or realTimeKey changes)
+  // Filter, Split, and Sort reports into two sections (runs when reports or filters change)
   const { overdueReports, otherReports } = useMemo(() => {
       // 1. Apply user filters to the master list
       const filtered = reports.filter(report => {
@@ -400,7 +326,7 @@ const UnassignedReportsPage = () => {
       const others = [];
 
       filtered.forEach(report => {
-          if (getDeadlineStatus(report.deadline) === 'overdue') {
+          if (report.isOverdue) {
               overdue.push(report);
           } else {
               others.push(report);
@@ -432,7 +358,8 @@ const UnassignedReportsPage = () => {
       });
       
       return { overdueReports: sortedOverdue, otherReports: sortedOthers };
-  }, [reports, filters, realTimeKey]);
+  }, [reports, filters]);
+
 
 
   const totalFilteredReports = overdueReports.length + otherReports.length;

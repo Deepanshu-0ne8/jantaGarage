@@ -207,10 +207,9 @@ export const getdepartmentalReport = async (req, res, next) => {
         const reports = await Report.find({ departments: { $in: req.user.departments } });
 
         if (reports.length === 0) {
-            return res.status(404).json({
-                success: false,
-                status: 'fail',
-                message: 'No reports found for this user'
+            return res.status(200).json({
+                success: true,
+                data: []
             });
         }
         // console.log(reports);
@@ -227,18 +226,12 @@ export const getReportsForVerification = async (req, res, next) => {
     try {
       const reportsId = req.user.reportsForVerification;
       if(!reportsId || reportsId.length === 0) {
-        return res.status(404).json({
-            status: 'fail',
-            message: 'No reports found for verification'
+        return res.status(200).json({
+            success: true,
+            data: []
         });
       }
       const reports = await Report.find({_id: { $in: reportsId }});
-      if(reports.length === 0) {
-        return res.status(404).json({
-            status: 'fail',
-            message: 'No reports found for verification'
-        });
-      }
         res.status(200).json({
             success: true,
             data: reports

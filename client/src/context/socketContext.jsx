@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useAuth } from "./authContext";
+import { useQueryClient } from "@tanstack/react-query";
 const socketUrl = import.meta.env.VITE_SOCKET_URL;
 
 const SocketContext = createContext();
@@ -10,6 +11,7 @@ export const useSocket = () => useContext(SocketContext);
 export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
   const [socket, setSocket] = useState(null); // use state instead of ref
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!user) return;
@@ -24,6 +26,13 @@ export const SocketProvider = ({ children }) => {
 
     newSocket.on("connect", () => {
       console.log("✅ Connected to socket:", newSocket.id);
+      newSocket.emit("registerUser", user._id);
+    });
+
+    newSocket.on("reportOverdue", (payload) => {
+      console.log("⏰ Real-time reportOverdue received, invalidating queries:", payload);
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
     });
 
     newSocket.on("disconnect", () => {
@@ -34,7 +43,7 @@ export const SocketProvider = ({ children }) => {
       newSocket.disconnect();
       setSocket(null);
     };
-  }, [user]);
+  }, [user, queryClient]);
 
   return (
     <SocketContext.Provider value={socket}>
@@ -42,3 +51,4 @@ export const SocketProvider = ({ children }) => {
     </SocketContext.Provider>
   );
 };
+

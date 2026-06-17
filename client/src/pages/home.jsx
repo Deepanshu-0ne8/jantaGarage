@@ -36,41 +36,17 @@ const formatDate = (date) => {
   });
 };
 
-// Helper to determine deadline chip class, comparing the full timestamp (date + time)
-const getDeadlineClass = (deadlineDate, status) => {
-    // Only check active reports for urgency
-    if (status === 'Resolved' || status === 'CLOSED' || !deadlineDate) {
-        return ''; 
-    }
-
-    const nowTime = new Date().getTime();
-    const deadlineTime = new Date(deadlineDate).getTime();
-    
-    // Check for Overdue status using full timestamp
-    if (nowTime > deadlineTime) return 'deadline-overdue';
-
-    const msInDay = 1000 * 60 * 60 * 24;
-    const diffDays = (deadlineTime - nowTime) / msInDay;
-
-    if (diffDays <= 1) return 'deadline-critical'; // Less than or equal to 1 day remaining
-    if (diffDays <= 3) return 'deadline-urgent';   // Less than or equal to 3 days remaining
-    return 'deadline-normal';
-};
-
-
 const ActiveReportCard = ({ report, onClick }) => {
   const statusClass = (report.status || "Pending").toLowerCase().replace(/_/g, "-");
   const severityClass = (report.severity || "Low").toLowerCase();
   const reportDate = report.createdAt ? formatDate(report.createdAt) : "-";
   
-  // NEW: Deadline calculation for visual flags
-  const deadlineClass = getDeadlineClass(report.deadline, report.status);
   const deadlineText = report.deadline ? formatDate(report.deadline) : "No Deadline";
-  const isOverdue = deadlineClass === 'deadline-overdue';
+  const isOverdue = !!report.isOverdue;
 
   return (
     <div
-      className={`report-card-item ${deadlineClass} ${isOverdue ? 'is-overdue' : ''}`}
+      className={`report-card-item ${isOverdue ? 'is-overdue' : ''}`}
       onClick={() => onClick(report._id)}
       role="button"
       tabIndex={0}
@@ -91,7 +67,7 @@ const ActiveReportCard = ({ report, onClick }) => {
         <p className="card-date">Filed: {reportDate}</p>
         <p className="card-deadline">
           Deadline:{" "}
-          <span className={`deadline-date ${deadlineClass || 'no-deadline'}`}>
+          <span className="deadline-date">
             {deadlineText}
           </span>
         </p>
@@ -113,61 +89,68 @@ const ActiveReportCard = ({ report, onClick }) => {
   );
 };
 
-// Utility: fetch count of unassigned reports
-const fetchUnassignedCount = async () => {
-  try {
-    // Using api mock placeholder
-    const res = await api.get("/reports/unAssigned", { withCredentials: true });
-    return res.data?.data?.length || 0; 
-  } catch {
-    return 0;
-  }
-};
+
+// // Utility: fetch count of unassigned reports
+// const fetchUnassignedCount = async () => {
+//   try {
+//     // Using api mock placeholder
+//     const res = await api.get("/reports/unAssigned", { withCredentials: true });
+//     return res.data?.data?.length || 0; 
+//   } catch {
+//     return 0;
+//   }
+// };
+
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const Home = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const [reports, setReports] = useState([]); // All active reports fetched from API
-  const [pastReports, setPastReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [globalUnassignedCount, setGlobalUnassignedCount] = useState(0);
-  
-  // NEW: State for forcing real-time update
-  const [realTimeKey, setRealTimeKey] = useState(0);
 
   const openPopup = () => setIsPopupOpen(true);
   const closePopup = () => setIsPopupOpen(false);
 
-  const fetchUserReports = async () => {
-    if (!user) return;
-    try {
-      setLoading(true);
-      // Using api mock placeholder
+  // Fetch all user reports via useQuery
+  const { data: allReports = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey: ["reports", "user"],
+    queryFn: async () => {
       const res = await api.get("/reports/user", { withCredentials: true });
-      const allReports = res.data?.data || [];
+      return res.data?.data || [];
+    },
+    enabled: !!user,
+  });
 
-      const closed = allReports.filter((r) => r.status === "Resolved");
-      const active = allReports.filter((r) => r.status !== "Resolved");
+  // Fetch unassigned reports count for admin via useQuery
+  const { data: unassignedCount = 0 } = useQuery({
+    queryKey: ["reports", "unassignedCount"],
+    queryFn: async () => {
+      const res = await api.get("/reports/unAssigned", { withCredentials: true });
+      return res.data?.data?.length || 0;
+    },
+    enabled: !!user && user.role === "admin",
+  });
 
-      const sortedClosed = closed.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-      // NOTE: We no longer sort here. Sorting logic is moved to useMemo for real-time key dependency.
-      setReports(active); 
-      setPastReports(sortedClosed);
-    } catch (err) {
-      console.error(err);
-      setError(err?.response?.data?.message || "Failed to fetch reports");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const error = queryError ? (queryError.response?.data?.message || "Failed to fetch reports") : "";
+
+  // Split and sort reports
+  const sortedActiveReports = useMemo(() => {
+    return allReports
+      .filter((r) => r.status !== "Resolved")
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  }, [allReports]);
+
+  const pastReports = useMemo(() => {
+    return allReports
+      .filter((r) => r.status === "Resolved")
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  }, [allReports]);
 
   const fetchReportDetails = async (id) => {
     try {
       setDetailsLoading(true);
-      // Using api mock placeholder
       const res = await api.get(`/reports/get/${id}`, { withCredentials: true });
       setSelectedReport(res.data?.data || null);
     } catch (err) {
@@ -176,67 +159,15 @@ const Home = () => {
       setDetailsLoading(false);
     }
   };
-  
-  // --- REAL-TIME DEADLINE CHECKER ---
-  useEffect(() => {
-      let timer;
-      const nowTime = new Date().getTime();
-      
-      // 1. Find the next relevant deadline time among ACTIVE reports
-      const nextDeadlineTime = reports.reduce((minTime, report) => {
-          if (report.status !== 'OPEN' && report.status !== 'IN_PROGRESS' || !report.deadline) return minTime;
 
-          const deadlineTime = new Date(report.deadline).getTime();
-          
-          // Only consider future deadlines
-          if (deadlineTime > nowTime && deadlineTime < minTime) {
-              return deadlineTime;
-          }
-          return minTime;
-      }, Infinity);
-
-      if (nextDeadlineTime !== Infinity) {
-          // Calculate delay until that specific moment (plus 1 second buffer)
-          const delay = nextDeadlineTime - nowTime + 1000;
-          
-          timer = setTimeout(() => {
-              // Force re-evaluation of report statuses by updating the key
-              setRealTimeKey(prev => prev + 1); 
-          }, delay);
-      }
-      
-      return () => clearTimeout(timer);
-  }, [reports, realTimeKey]); 
-
-
-  useEffect(() => {
-    if (user) {
-      fetchUserReports();
-      if (user.role === "admin") {
-        fetchUnassignedCount().then(setGlobalUnassignedCount);
-      }
-    }
-  }, [user]);
-
-  const handleReportCreated = (newReport) => {
-    // Add the new report to the active list and re-sort (re-sorting is done in useMemo)
-    if (newReport) {
-      setReports((prev) => [newReport, ...prev]);
-    }
+  const handleReportCreated = () => {
+    // Invalidate react query cache to trigger background refetch
+    queryClient.invalidateQueries({ queryKey: ["reports", "user"] });
   };
-  
-// NEW: Sort active reports based on updated date/realTimeKey
-  const sortedActiveReports = useMemo(() => {
-      // FIX: Added [...reports] to prevent mutating the original state array
-      return [...reports].sort((a, b) => {
-          // Primary Sort: UpdatedAt/CreatedAt (Newest first)
-          return new Date(b.updatedAt) - new Date(a.updatedAt);
-      });
-  }, [reports, realTimeKey]);
 
   const isAdmin = user?.role === "admin";
   const isStaff = user?.role === "staff";
-  const unassignedCount = globalUnassignedCount;
+
 
   return (
     <div className="home-container">

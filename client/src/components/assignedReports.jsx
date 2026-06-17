@@ -25,27 +25,7 @@ const labelize = (raw) => {
     .join(" ");
 };
 
-// Helper to determine deadline chip class based on remaining days/time
-const getDeadlineClass = (deadlineDate, status) => {
-    if (status === 'Resolved' || status === 'CLOSED') {
-        return ''; // Don't show urgency for resolved reports
-    }
-
-    if (!deadlineDate) return 'deadline-none';
-
-    const nowTime = new Date().getTime();
-    const deadlineTime = new Date(deadlineDate).getTime();
-    
-    // Check for Overdue status using full timestamp
-    if (nowTime > deadlineTime) return 'deadline-overdue';
-
-    const msInDay = 1000 * 60 * 60 * 24;
-    const diffDays = (deadlineTime - nowTime) / msInDay;
-
-    if (diffDays <= 1) return 'deadline-critical'; // Less than or equal to 1 day remaining
-    if (diffDays <= 3) return 'deadline-urgent';   // Less than or equal to 3 days remaining
-    return 'deadline-normal';
-};
+// Overdue status is handled via database and Socket.IO events.
 
 // --- Report Detail Modal ---
 const ReportDetailModal = ({ report, onClose, onStatusChange }) => {
@@ -61,9 +41,8 @@ const ReportDetailModal = ({ report, onClose, onStatusChange }) => {
     const isResolveVisible = report.status === 'IN_PROGRESS' && !report.isNotifiedTOResolved;
     const showWaitingMessage = report.status === 'IN_PROGRESS' && report.isNotifiedTOResolved;
 
-    // Deadline formatting and classification - Using toLocaleString for full date/time precision
+    // Deadline formatting - Using toLocaleString for full date/time precision
     const formattedDeadline = report.deadline ? new Date(report.deadline).toLocaleString() : 'N/A';
-    const deadlineClass = getDeadlineClass(report.deadline, report.status);
 
     // --- Handlers ---
     
@@ -121,10 +100,10 @@ const ReportDetailModal = ({ report, onClose, onStatusChange }) => {
                         </span>
                     </p>
                     
-                    {/* NEW: Deadline Detail */}
+                    {/* Deadline Detail */}
                     <p className="modal-detail">
                         <strong>Deadline:</strong>{" "}
-                        <span className={`deadline-chip ${deadlineClass}`}>
+                        <span className="deadline-chip">
                             {formattedDeadline}
                         </span>
                     </p>
@@ -194,14 +173,12 @@ const AssignedReportCard = ({ report, onClick }) => {
     const severityClass = (report.severity || 'Low').toLowerCase();
     const reportDate = new Date(report.createdAt).toLocaleDateString('en-GB');
 
-    // NEW: Deadline calculation for card styling
-    const deadlineClass = getDeadlineClass(report.deadline, report.status);
     const deadlineText = report.deadline ? new Date(report.deadline).toLocaleDateString('en-GB') : 'N/A';
-    const isOverdue = deadlineClass === 'deadline-overdue';
+    const isOverdue = !!report.isOverdue;
 
     return (
         <div 
-            className={`report-card-item status-${statusClass} ${deadlineClass} ${isOverdue ? 'is-overdue' : ''}`} 
+            className={`report-card-item status-${statusClass} ${isOverdue ? 'is-overdue' : ''}`} 
             onClick={() => onClick(report)}
             role="button"
             tabIndex={0}
@@ -222,13 +199,11 @@ const AssignedReportCard = ({ report, onClick }) => {
                         {labelize(report.status)}
                     </span>
 
-                    {/* NEW: Overdue Tag inside card */}
                     {isOverdue && (
                         <span className="deadline-tag overdue-tag-card">OVERDUE</span>
                     )}
                     
-                    {/* NEW: Deadline Chip in Card */}
-                    <span className={`deadline-chip-card ${deadlineClass}`}>
+                    <span className="deadline-chip-card">
                         Due: {deadlineText}
                     </span>
                     <span className={`severity-chip severity-${severityClass} card-severity-chip`}>
@@ -241,66 +216,31 @@ const AssignedReportCard = ({ report, onClick }) => {
 };
 
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
 // --- Main Component ---
 const AssignedReports = () => {
     const { user, loading: authLoading } = useAuth();
-    const [reports, setReports] = useState([]); // Store all fetched reports here
+    const queryClient = useQueryClient();
     const [selectedReport, setSelectedReport] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [statusMessage, setStatusMessage] = useState({ type: '', message: '' }); 
     
-    // New state for forcing real-time update
-    const [realTimeKey, setRealTimeKey] = useState(0);
-
     const isStaff = user?.role === 'staff';
 
-    const fetchReports = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        
-        try {
-            const fetchedReports = await getAssignedReportsForStaff(); 
-            setReports(fetchedReports || []); // Update the master reports state
-        } catch (err) {
-            setError(err.message);
-            setReports([]);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const { data: reports = [], isLoading: loading, error: queryError } = useQuery({
+        queryKey: ["reports", "assigned"],
+        queryFn: getAssignedReportsForStaff,
+        enabled: !authLoading && !!user && isStaff,
+    });
 
-    // --- REAL-TIME DEADLINE CHECKER ---
     useEffect(() => {
-        let timer;
-        const nowTime = new Date().getTime();
-        
-        // 1. Find the next relevant deadline time among ALL active reports
-        const nextDeadlineTime = reports.reduce((minTime, report) => {
-            // Only consider reports that are NOT resolved/closed and have a deadline
-            if (report.status === 'Resolved' || report.status === 'CLOSED' || !report.deadline) return minTime;
-
-            const deadlineTime = new Date(report.deadline).getTime();
-            
-            // Only consider future deadlines
-            if (deadlineTime > nowTime && deadlineTime < minTime) {
-                return deadlineTime;
-            }
-            return minTime;
-        }, Infinity);
-
-        if (nextDeadlineTime !== Infinity) {
-            // Calculate delay until that specific moment (plus 1 second buffer)
-            const delay = nextDeadlineTime - nowTime + 1000;
-            
-            timer = setTimeout(() => {
-                // Force re-evaluation of report statuses by updating the key
-                setRealTimeKey(prev => prev + 1); 
-            }, delay);
+        if (queryError) {
+            setError(queryError.message);
+        } else {
+            setError(null);
         }
-        
-        return () => clearTimeout(timer);
-    }, [reports, realTimeKey]); // realTimeKey added to dependency array to reset timer after a deadline passes
+    }, [queryError]);
 
     // --- SORTING AND SPLITTING LOGIC (Use useMemo to optimize) ---
     const { activeReports, pastReports } = useMemo(() => {
@@ -333,7 +273,7 @@ const AssignedReports = () => {
         const sortedPast = past.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
         
         return { activeReports: sortedUnresolved, pastReports: sortedPast };
-    }, [reports, realTimeKey]); // Reruns when reports are fetched OR when a deadline passes
+    }, [reports]);
 
     // Effect for status message timeout
     useEffect(() => {
@@ -342,26 +282,16 @@ const AssignedReports = () => {
             return () => clearTimeout(timer);
         }
     }, [statusMessage]);
-    
-    // Effect for initial load
-    useEffect(() => {
-        if (authLoading || !user) return;
-        
-        if (isStaff) {
-            fetchReports();
-        } else {
-            setLoading(false);
-        }
-    }, [user, authLoading, isStaff, fetchReports]);
 
     // Handler passed to modal to refresh data after assignment
     const handleStatusUpdate = useCallback((type, message) => {
         setStatusMessage({ type, message });
         setSelectedReport(null); // Close the modal
         
-        // Refresh the list instantly to show new status/notification field
-        fetchReports(); 
-    }, [fetchReports]);
+        // Refresh the list instantly using react query
+        queryClient.invalidateQueries({ queryKey: ["reports", "assigned"] }); 
+    }, [queryClient]);
+
 
 
     // --- Render Guards ---

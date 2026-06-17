@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 import app from './app.js';
 import connectDB from './database/mongodb.js';
 import { CLIENT_URL, PORT } from './config/env.js';
-import { initOverdueJob } from './cronJobs/overdueJob.js';
+import { initReportWorker } from './workers/reportWorker.js';
 
 const server = http.createServer(app);
 
@@ -34,14 +34,15 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start server and DB, then init cron job
+// Start server and DB, then init worker
 server.listen(PORT, async () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
   try {
     await connectDB();
     console.log('✅ MongoDB connected');
-    initOverdueJob(io); // start the periodic check (passes io so job can emit)
+    initReportWorker(io); // Start the BullMQ worker (passes io so worker can emit)
   } catch (err) {
     console.error('DB connection error:', err);
   }
 });
+

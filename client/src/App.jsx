@@ -21,6 +21,17 @@ import AdminAssignedReports from "./components/AdminAssignedReports.jsx";
 import { SocketProvider } from "./context/socketContext.jsx";
 import ReportDetails from "./components/ReportDetails.jsx";
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
 const appRouter = createBrowserRouter([
   {
     path: "/",
@@ -62,13 +73,16 @@ const appRouter = createBrowserRouter([
 
 function App() {
   return (
-    <AuthProvider>
-      {/* ✅ SocketProvider inside AuthProvider so it can use user info */}
-      <SocketProvider>
-        <RouterProvider router={appRouter} />
-      </SocketProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        {/* ✅ SocketProvider inside AuthProvider so it can use user info */}
+        <SocketProvider>
+          <RouterProvider router={appRouter} />
+        </SocketProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
+
 
 export default App;

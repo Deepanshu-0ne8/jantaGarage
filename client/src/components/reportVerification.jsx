@@ -179,37 +179,20 @@ const VerificationReportItem = ({ report, onResolutionAction }) => {
 };
 
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
 const ReportVerificationPage = () => {
     const { user, loading: authLoading } = useAuth();
-    const [reports, setReports] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const queryClient = useQueryClient();
     const [statusMessage, setStatusMessage] = useState({ type: '', message: '' }); 
     
-    const fetchReports = useCallback(async () => {
-        setLoading(true);
-        setError(null); 
-        
-        try {
-            const fetchedReports = await getReportsForVerification();
-            setReports(fetchedReports);
-        } catch (err) {
-            // Note: No reports found (404) also sets error, which is handled in the render block
-            setError(err.message);
-            setReports([]); 
-        } finally {
-            setLoading(false);
-        }
-    }, []); 
+    const { data: reports = [], isLoading: loading, error: queryError } = useQuery({
+        queryKey: ["reports", "verification"],
+        queryFn: getReportsForVerification,
+        enabled: !authLoading && !!user,
+    });
 
-
-    useEffect(() => {
-        
-        if (!authLoading && user) { 
-            fetchReports();
-        }
-    }, [user, authLoading, fetchReports]);
-
+    const error = queryError ? queryError.message : null;
 
     useEffect(() => {
         if (statusMessage.message) {
@@ -219,14 +202,14 @@ const ReportVerificationPage = () => {
     }, [statusMessage]);
 
 
-    // Handler that removes the resolved/rejected report from the local list
+    // Handler that invalidates the verification query
     const handleResolutionAction = useCallback((type, reportId, message) => {
         setStatusMessage({ type, message });
         
-        // Remove the report from the local state immediately
-        setReports(prevReports => prevReports.filter(r => r._id !== reportId));
-        
-    }, []);
+        // Invalidate query to trigger background refetch
+        queryClient.invalidateQueries({ queryKey: ["reports", "verification"] });
+    }, [queryClient]);
+
 
 
     // --- Render Guards ---

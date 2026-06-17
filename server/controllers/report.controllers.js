@@ -4,6 +4,7 @@ import User from "../models/user.model.js";
 import { uploadrepOnCloudinary } from "../utils/cloudinary.js";
 import nodemailer from "nodemailer";
 import { Parser } from "json2csv";
+import { reportQueue } from "../config/queue.js";
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -26,16 +27,25 @@ export const createReport = async (req, res, next) => {
         })
         const createdAt = new Date(report.createdAt);
         if(report.severity === 'High')
-        report.deadline = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
+        report.deadline = new Date(createdAt.getTime() + 180 * 1000);
         else if(report.severity === 'Medium')
         report.deadline = new Date(createdAt.getTime() + 2 * 24 * 60 * 60 * 1000);
         else
         report.deadline = new Date(createdAt.getTime() + 3 * 24 * 60 * 60 * 1000);
         await report.save();
 
+        // Schedule delayed job for overdue report check
+        const delay = report.deadline.getTime() - Date.now();
+        await reportQueue.add(
+            'checkOverdue',
+            { reportId: report._id.toString() },
+            { delay: Math.max(0, delay) }
+        );
+        console.log(`⏰ Scheduled overdue check job for report ${report._id} with delay ${delay}ms`);
+
           const admins = await User.find({ role: 'admin' });
 
-        admins.forEach(async (admin) => {
+        for (const admin of admins) {
           await transporter.sendMail({
             from: 'patidardeepanshu910@gmail.com',
             to: admin.email,
@@ -49,7 +59,7 @@ export const createReport = async (req, res, next) => {
         });
         await admin.save();
 
-        });
+        }
 
 
 
@@ -85,15 +95,24 @@ export const createReport = async (req, res, next) => {
 
         const createdAt = new Date(report.createdAt);
         if(report.severity === 'High')
-        report.deadline = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
+        report.deadline = new Date(createdAt.getTime() + 120 * 1000);
         else if(report.severity === 'Medium')
         report.deadline = new Date(createdAt.getTime() + 2 * 24 * 60 * 60 * 1000);
         else
         report.deadline = new Date(createdAt.getTime() + 3 * 24 * 60 * 60 * 1000);
         await report.save();
 
+        // Schedule delayed job for overdue report check
+        const delay = report.deadline.getTime() - Date.now();
+        await reportQueue.add(
+            'checkOverdue',
+            { reportId: report._id.toString() },
+            { delay: Math.max(0, delay) }
+        );
+        console.log(`⏰ Scheduled overdue check job for report ${report._id} with delay ${delay}ms`);
+
         const admins = await User.find({ role: 'admin' });        
-        admins.forEach(async (admin) => {
+        for (const admin of admins) {
           await transporter.sendMail({
             from: 'patidardeepanshu910@gmail.com',
             to: admin.email,
@@ -105,7 +124,7 @@ export const createReport = async (req, res, next) => {
             message: `A new report has been created with the title: ${report.title}. Please review it at your earliest convenience.`
         });
         await admin.save();
-        });
+        }
 
         // You might want to remove the temporary file from the local server after successful upload.
         // For that, you'd need to import 'fs' and call fs.unlinkSync(localImagePath);
@@ -167,15 +186,9 @@ export const getReportsByUserId = async (req, res, next) => {
             path: 'createdBy',
             options: { sort: { createdAt: -1 } },    
         });
-        if(!reports || reports.length === 0) {
-            return res.status(404).json({
-                status: 'fail',
-                message: 'No reports found for this user'
-            });
-        }
         res.status(200).json({
             success: true,
-            data: reports
+            data: reports || []
         });
     } catch (error) {
         next(error)
@@ -356,6 +369,8 @@ export const updateReportStatusToResolved = async (req, res, next) => {
             });
         }
 
+        console.log(report);
+
         if (report.status !== 'IN_PROGRESS') {
             return res.status(400).json({
                 status: 'fail',
@@ -406,11 +421,11 @@ export const updateReportStatusToResolved = async (req, res, next) => {
                 from: 'patidardeepanshu910@gmail.com',
                 to: admin.email,
                 subject: 'Report Resolved',
-                text: `A report with the title: ${report.title} has been marked as resolved. Please verify the resolution at your earliest convenience.`
+                text: `The creator of the report with the title: ${report.title} has verified the resolution. Thank you for your efforts!`
             });
             admin.notifications.push({
                 reportId: report._id,
-                message: `A report with the title: ${report.title} has been marked as resolved. Please verify the resolution at your earliest convenience.`
+                message: `The creator of the report with the title: ${report.title} has verified the resolution. Thank you for your efforts!`
             });
             await admin.save();
         });
@@ -479,7 +494,7 @@ export const rejectResolution = async (req, res, next) => {
         });
         await staff.save();
 
-        }
+      }
   
       res.status(200).json({
         status: 'success',
@@ -504,15 +519,10 @@ export const getAllAssignedReportsByAdmin = async (req, res, next) => {
         isAssigned: true,
         "assignedBy._id": req.user._id
       });
-      if (reports.length === 0) {
-        return res.status(404).json({
-          status: "fail",
-          message: "No assigned reports found.",
-        });
-      }
 
       res.status(200).json({
         status: "success",
+        success: true,
         data: reports,
       });
     } catch (error) {

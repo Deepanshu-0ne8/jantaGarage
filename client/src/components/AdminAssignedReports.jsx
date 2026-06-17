@@ -12,8 +12,7 @@ import {
     SEVERITY_OPTIONS, 
     STATUS_OPTIONS, 
     DEPARTMENT_OPTIONS, 
-    labelize, 
-    getDeadlineClass 
+    labelize 
 } from './AdminAssignedReports.types.js'; 
 
 Modal.setAppElement('#root');
@@ -141,8 +140,6 @@ const ReportDetailsModal = ({ report, onClose }) => {
         : null;
 
     const formattedDeadline = report.deadline ? new Date(report.deadline).toLocaleString() : 'N/A';
-    const deadlineClass = getDeadlineClass(report.deadline, report.status);
-
     const attachmentCount = report.image?.url ? 1 : 0;
 
     return (
@@ -175,7 +172,7 @@ const ReportDetailsModal = ({ report, onClose }) => {
                     
                     <p className="modal-detail">
                         <strong>Deadline:</strong>{" "}
-                        <span className={`deadline-chip ${deadlineClass}`}>
+                        <span className="deadline-chip">
                             {formattedDeadline}
                         </span>
                     </p>
@@ -242,9 +239,8 @@ const AssignedReportCard = ({ report, onClick }) => {
     const statusClass = (report.status || 'Pending').toLowerCase().replace(/_/g, '-');
     const severityClass = (report.severity || 'Low').toLowerCase();
 
-    const deadlineClass = getDeadlineClass(report.deadline, report.status);
     const deadlineText = report.deadline ? new Date(report.deadline).toLocaleDateString('en-GB') : 'N/A';
-    const isOverdue = deadlineClass === 'deadline-overdue';
+    const isOverdue = !!report.isOverdue;
     
     // Use updatedAt for resolved reports status if available
     const lastDate = report.status === 'Resolved' || report.status === 'CLOSED'
@@ -255,15 +251,10 @@ const AssignedReportCard = ({ report, onClick }) => {
 
     // Base card class
     const baseCardClasses = `report-card-item status-${statusClass}`;
-    
-    // If deadlineClass is empty (resolved), use 'deadline-normal' for the date chip background, 
-    // otherwise use the calculated urgency class.
-    const deadlineChipClass = deadlineClass || 'deadline-normal';
 
     return (
         <div 
-            // Apply is-overdue ONLY if it's currently active AND overdue
-            className={`${baseCardClasses} ${deadlineClass} ${isOverdue ? 'is-overdue' : ''}`} 
+            className={`${baseCardClasses} ${isOverdue ? 'is-overdue' : ''}`} 
             onClick={() => onClick(report)}
             role="button"
             tabIndex={0}
@@ -271,7 +262,6 @@ const AssignedReportCard = ({ report, onClick }) => {
             <div className="card-content">
                 <div className="card-header">
                     <h3 className="card-title">{report.title}</h3>
-                    {/* Only show OVERDUE tag if currently active AND overdue */}
                     {isOverdue && (
                         <span className="deadline-tag overdue-tag-card">OVERDUE</span>
                     )}
@@ -284,8 +274,7 @@ const AssignedReportCard = ({ report, onClick }) => {
                         {labelize(report.status)}
                     </span>
                     
-                    {/* Display deadline or completion date. Uses deadlineChipClass to ensure styling is appropriate. */}
-                    <span className={`deadline-chip-card ${deadlineChipClass} date-info`}>
+                    <span className="deadline-chip-card date-info">
                         {dateLabel} {lastDate}
                     </span>
                     <span className={`severity-chip severity-${severityClass}`}>
@@ -298,77 +287,30 @@ const AssignedReportCard = ({ report, onClick }) => {
 };
 
 
+import { useQuery } from '@tanstack/react-query';
+
 // --- Main Component ---
 const AdminAssignedReports = () => {
     const { user, loading: authLoading } = useAuth();
-    const [reports, setReports] = useState([]); 
     const [selectedReport, setSelectedReport] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filters, setFilters] = useState({ severity: '', status: '', departments: [] });
-    
-    // State for forcing real-time update
-    const [realTimeKey, setRealTimeKey] = useState(0);
 
     const isAuthorized = user?.role === 'admin';
 
-    const fetchReports = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        
-        try {
-            // NOTE: Assuming getAssignedReportsByAdmin calls the backend route
-            const response = await getAssignedReportsByAdmin(); 
-            // We assume the API handles population of the 'assignedTo' field for staff name display
-            setReports(response || []); 
-        } catch (err) {
-            // Handle case where no reports are found (404/empty data)
-            const errMsg = err.message || "Failed to fetch assigned reports.";
-            if (errMsg.includes('404') || errMsg.includes('No assigned reports found')) {
-                 setReports([]);
-                 setError(null); // Clear error if it's just an empty result
-            } else {
-                 setError(errMsg);
-            }
-            setReports([]);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const { data: reports = [], isLoading: loading, error: queryError } = useQuery({
+        queryKey: ["reports", "assignedByAdmin"],
+        queryFn: getAssignedReportsByAdmin,
+        enabled: !authLoading && !!user && isAuthorized,
+    });
 
-    // --- REAL-TIME DEADLINE CHECKER ---
     useEffect(() => {
-        let timer;
-        const nowTime = new Date().getTime();
-        
-        // 1. Find the next relevant deadline time among ACTIVE reports
-        const nextDeadlineTime = reports.reduce((minTime, report) => {
-            // Only consider reports that are OPEN or IN_PROGRESS and have a future deadline
-            const isActive = report.status === 'OPEN' || report.status === 'IN_PROGRESS';
-            if (!isActive || !report.deadline) return minTime;
-
-            const deadlineTime = new Date(report.deadline).getTime();
-            
-            // Only consider future deadlines
-            if (deadlineTime > nowTime && deadlineTime < minTime) {
-                return deadlineTime;
-            }
-            return minTime;
-        }, Infinity);
-
-        if (nextDeadlineTime !== Infinity) {
-            // Calculate delay until that specific moment (plus 1 second buffer)
-            const delay = nextDeadlineTime - nowTime + 1000;
-            
-            timer = setTimeout(() => {
-                // Force re-evaluation of report statuses by updating the key
-                setRealTimeKey(prev => prev + 1); 
-            }, delay);
+        if (queryError) {
+            setError(queryError.message || "Failed to fetch assigned reports.");
+        } else {
+            setError(null);
         }
-        
-        return () => clearTimeout(timer);
-    }, [reports, realTimeKey]); 
-
+    }, [queryError]);
 
     // --- FILTERING AND SORTING LOGIC ---
     const { activeReports, pastReports, totalFilteredCount } = useMemo(() => {
@@ -390,8 +332,8 @@ const AdminAssignedReports = () => {
 
         // 3. Sort Active Reports (Priority: Overdue, Severity, Deadline Time)
         const sortedActive = unresolved.sort((a, b) => {
-            const isAOverdue = getDeadlineClass(a.deadline, a.status) === 'deadline-overdue';
-            const isBOverdue = getDeadlineClass(b.deadline, b.status) === 'deadline-overdue';
+            const isAOverdue = !!a.isOverdue;
+            const isBOverdue = !!b.isOverdue;
 
             // Primary Sort: Overdue status (Overdue first)
             if (isAOverdue !== isBOverdue) {
@@ -424,18 +366,8 @@ const AdminAssignedReports = () => {
             pastReports: sortedPast,
             totalFilteredCount: filtered.length
         };
-    }, [reports, filters, realTimeKey]); 
+    }, [reports, filters]);
 
-    // Effect for initial load
-    useEffect(() => {
-        if (authLoading || !user) return;
-        
-        if (isAuthorized) {
-            fetchReports();
-        } else {
-            setLoading(false);
-        }
-    }, [user, authLoading, isAuthorized, fetchReports]);
 
 
     // --- Render Guards ---
