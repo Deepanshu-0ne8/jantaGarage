@@ -62,3 +62,6 @@ typings/
 .next
 
 public/temp
+
+# macOS
+.DS_Store
