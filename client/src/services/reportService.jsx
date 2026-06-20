@@ -133,3 +133,19 @@ export const getReportById = async (reportId) => {
         throw new Error(errorMessage);
     }
 };
+
+export const getHeatmapGridData = async (filters = {}) => {
+    try {
+        const response = await api.get('/reports/heatmap-grid', {
+            params: {
+                severity: filters.severity || undefined,
+                status: filters.status || undefined,
+                departments: filters.departments?.length > 0 ? filters.departments.join(',') : undefined
+            },
+            withCredentials: true
+        });
+        return response.data.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to fetch heatmap grid data.");
+    }
+};

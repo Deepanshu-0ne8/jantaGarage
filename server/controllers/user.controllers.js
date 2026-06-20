@@ -317,6 +317,12 @@ export const assignReportToStaff = async (req, res, next) => {
         message: "Report assigned to staff successfully.",
         data: { report, staff },
       });
+
+      const io = req.app.get('io');
+      if (io) {
+        io.to('globalRoom').emit('reportUpdated', report);
+        io.to(staff._id.toString()).emit('newNotification');
+      }
     } catch (error) {
       next(error);
     }

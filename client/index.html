@@ -16,19 +16,26 @@
     <!-- 3. FONT AWESOME ICONS (Required for map markers and UI icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
 
+    <!-- MAP DEPENDENCIES (JAVASCRIPT) -->
+    <!-- 1. Core Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    
+    <!-- 2. Leaflet Marker Cluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    
+    <!-- 3. Leaflet Heatmap Layer JS -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+    <script>
+      window.CDN_L = window.L;
+    </script>
+
   </head>
   <body>
     <div id="root"></div>
     
     <!-- Your main application entry point -->
     <script type="module" src="/src/main.jsx"></script>
-    
-    <!-- MAP DEPENDENCIES (JAVASCRIPT) - Must load before your application initializes the map -->
-    <!-- 1. Core Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    
-    <!-- 2. Leaflet Marker Cluster JS -->
-    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
     
   </body>
 </html>

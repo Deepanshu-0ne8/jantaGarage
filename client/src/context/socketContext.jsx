@@ -26,12 +26,28 @@ export const SocketProvider = ({ children }) => {
 
     newSocket.on("connect", () => {
       console.log("✅ Connected to socket:", newSocket.id);
-      newSocket.emit("registerUser", user._id);
+      newSocket.emit("registerUser", { userId: user._id, role: user.role });
+    });
+
+    newSocket.on("newReport", (payload) => {
+      console.log("📝 Real-time newReport received, invalidating queries:", payload);
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
     });
 
     newSocket.on("reportOverdue", (payload) => {
       console.log("⏰ Real-time reportOverdue received, invalidating queries:", payload);
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    });
+
+    newSocket.on("reportUpdated", (payload) => {
+      console.log("📝 Real-time reportUpdated received, invalidating queries:", payload);
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+    });
+
+    newSocket.on("newNotification", (payload) => {
+      console.log("🔔 Real-time newNotification received, invalidating queries:", payload);
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     });
 

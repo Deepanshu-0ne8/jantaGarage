@@ -6,6 +6,8 @@ import nodemailer from "nodemailer";
 import { Parser } from "json2csv";
 import { reportQueue } from "../config/queue.js";
 
+const GRID_SIZE = 0.01;
+
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -16,13 +18,20 @@ const transporter = nodemailer.createTransport({
 
 export const createReport = async (req, res, next) => {
     try {
+        const parsedLocation = JSON.parse(req.body.location);
+        const [lng, lat] = parsedLocation.coordinates;
+        const gridX = Math.floor(lat / GRID_SIZE);
+        const gridY = Math.floor(lng / GRID_SIZE);
+
         // Check if an image was uploaded
         if (!req.file) {
             
             const report = await Report.create({
             ...req.body,
             departments: JSON.parse(req.body.departments),
-            location: JSON.parse(req.body.location), // Assuming location comes as a stringified JSON
+            location: parsedLocation, // Assuming location comes as a stringified JSON
+            gridX,
+            gridY,
             createdBy: req.id
         })
         const createdAt = new Date(report.createdAt);
@@ -61,7 +70,11 @@ export const createReport = async (req, res, next) => {
 
         }
 
-
+        const io = req.app.get('io');
+        if (io) {
+            io.to('globalRoom').emit('newReport', report);
+            io.to('adminsRoom').emit('newNotification');
+        }
 
             return res.status(200).json({
                 status: 'success',
@@ -86,7 +99,9 @@ export const createReport = async (req, res, next) => {
         const report = await Report.create({
             ...req.body,
             departments: JSON.parse(req.body.departments),
-            location: JSON.parse(req.body.location), // Assuming location comes as a stringified JSON
+            location: parsedLocation, // Assuming location comes as a stringified JSON
+            gridX,
+            gridY,
             image: {
                 url: cloudinaryResponse.url // Store the URL returned by Cloudinary
             },
@@ -128,6 +143,12 @@ export const createReport = async (req, res, next) => {
 
         // You might want to remove the temporary file from the local server after successful upload.
         // For that, you'd need to import 'fs' and call fs.unlinkSync(localImagePath);
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to('globalRoom').emit('newReport', report);
+            io.to('adminsRoom').emit('newNotification');
+        }
 
         res.status(201).json({
             status: 'success',
@@ -222,6 +243,11 @@ export const updateReportStatusTOInProgress = async (req, res, next) => {
       });
     }
 
+    const io = req.app.get('io');
+    if (io) {
+        io.to('globalRoom').emit('reportUpdated', report);
+    }
+
     // Success response
     res.status(200).json({
       success: true,
@@ -286,6 +312,11 @@ export const updateReportStatusTOResolvedNotifiction = async (req, res, next) =>
         });
         await user.save();
       
+        const io = req.app.get('io');
+        if (io) {
+            io.to(report.createdBy.toString()).emit('newNotification');
+        }
+
         return res.status(200).json({
             success: true,
             message: "Notification sent to the report creator. Please wait for their verification.",
@@ -430,6 +461,15 @@ export const updateReportStatusToResolved = async (req, res, next) => {
             await admin.save();
         });
 
+        const io = req.app.get('io');
+        if (io) {
+            io.to('globalRoom').emit('reportUpdated', report);
+            if(staff) {
+                io.to(staff._id.toString()).emit('newNotification');
+            }
+            io.to('adminsRoom').emit('newNotification');
+        }
+
         res.status(200).json({
             status: 'success',
             message: 'Report marked as resolved successfully',
@@ -472,8 +512,9 @@ export const rejectResolution = async (req, res, next) => {
         });
       }
   
-      // Reset notification flag to allow future notifications
+      // Reset notification flag to allow future notifications and set back to OPEN
       report.isNotifiedTOResolved = false;
+      report.status = 'OPEN';
       await report.save();
   
       // Also remove the report from user's reportsForVerification array
@@ -496,6 +537,14 @@ export const rejectResolution = async (req, res, next) => {
 
       }
   
+      const io = req.app.get('io');
+      if (io) {
+          io.to('globalRoom').emit('reportUpdated', report);
+          if (staff) {
+              io.to(staff._id.toString()).emit('newNotification');
+          }
+      }
+
       res.status(200).json({
         status: 'success',
         message: 'Report resolution rejected successfully. You can expect a new resolution soon.',
@@ -642,5 +691,80 @@ export const downloadReportsCSV = async (req, res) => {
     res.send(csv);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+export const getHeatmapGridData = async (req, res, next) => {
+  try {
+    const { severity, status, departments } = req.query;
+
+    // Self-healing migration for legacy reports without grid coordinates
+    const ungriddedReports = await Report.find({
+      $or: [
+        { gridX: { $exists: false } },
+        { gridY: { $exists: false } }
+      ]
+    });
+
+    if (ungriddedReports.length > 0) {
+      for (const report of ungriddedReports) {
+        if (report.location && report.location.coordinates) {
+          const [lng, lat] = report.location.coordinates;
+          report.gridX = Math.floor(lat / GRID_SIZE);
+          report.gridY = Math.floor(lng / GRID_SIZE);
+          await report.save();
+        }
+      }
+    }
+
+    const matchStage = {};
+    if (severity) matchStage.severity = severity;
+    if (status) matchStage.status = status;
+    if (departments) {
+      const deptsArray = Array.isArray(departments)
+        ? departments
+        : departments.split(',').filter(Boolean);
+      if (deptsArray.length > 0) {
+        matchStage.departments = { $in: deptsArray };
+      }
+    }
+
+    const pipeline = [];
+    if (Object.keys(matchStage).length > 0) {
+      pipeline.push({ $match: matchStage });
+    }
+
+    pipeline.push({
+      $group: {
+        _id: {
+          x: "$gridX",
+          y: "$gridY"
+        },
+        count: { $sum: 1 },
+        reportIds: { $push: "$_id" }
+      }
+    });
+
+    const aggregated = await Report.aggregate(pipeline);
+
+    const gridData = aggregated
+      .filter(cell => cell._id.x !== null && cell._id.y !== null)
+      .map(cell => {
+        const lat = (cell._id.x + 0.5) * GRID_SIZE;
+        const lng = (cell._id.y + 0.5) * GRID_SIZE;
+        return {
+          lat,
+          lng,
+          count: cell.count,
+          reportIds: cell.reportIds
+        };
+      });
+
+    res.status(200).json({
+      status: 'success',
+      data: gridData
+    });
+  } catch (error) {
+    next(error);
   }
 };

@@ -12,7 +12,8 @@ import { createReport,
         updateReportStatusTOInProgress, 
         updateReportStatusToResolved,
         updateReportStatusTOResolvedNotifiction,
-        downloadReportsCSV
+        downloadReportsCSV,
+        getHeatmapGridData
     } from '../controllers/report.controllers.js';
 import { upload } from '../middlewares/multer.middleware.js';
 import multer from "multer";
@@ -22,6 +23,8 @@ const reportRouter = express.Router();
 // const upload = multer({ dest: "uploads/" });
 
 reportRouter.post('/', authorize, upload.single('reportImage'), createReport);
+
+reportRouter.get('/heatmap-grid', authorize, getHeatmapGridData);
 
 reportRouter.get('/', authorize, getAllReports);
 

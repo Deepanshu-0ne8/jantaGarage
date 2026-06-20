@@ -22,11 +22,20 @@ export { io };
 io.on('connection', (socket) => {
   console.log('🟢 Socket connected:', socket.id);
 
-  // client will call socket.emit('registerUser', userId) after login
-  socket.on('registerUser', (userId) => {
+  socket.on('registerUser', (data) => {
+    let userId = data;
+    let role = null;
+    if (typeof data === 'object' && data !== null) {
+      userId = data.userId;
+      role = data.role;
+    }
     if (!userId) return;
     socket.join(userId); // private room named by user id
-    console.log(`Socket ${socket.id} joined room ${userId}`);
+    socket.join('globalRoom'); // common room for all users
+    if (role === 'admin') {
+      socket.join('adminsRoom');
+    }
+    console.log(`Socket ${socket.id} joined private room ${userId} and globalRoom` + (role === 'admin' ? ' and adminsRoom' : ''));
   });
 
   socket.on('disconnect', () => {

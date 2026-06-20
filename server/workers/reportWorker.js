@@ -32,7 +32,7 @@ export const initReportWorker = (io) => {
         await report.save();
 
         // 2. Create notification for report creator (createdBy) and other involved parties
-        const notificationMessage = `Report #${report._id.toString().substring(0, 8)} is now OVERDUE!`;
+        const notificationMessage = `Report with Title "${report.title}" is now OVERDUE!`;
         
         // Push notification to creator
         const creator = await User.findById(report.createdBy);
@@ -127,6 +127,9 @@ export const initReportWorker = (io) => {
           deadline: report.deadline,
           isOverdue: true,
         };
+
+        // Emit to global room for all users (public pages and stats)
+        io.to('globalRoom').emit('reportOverdue', payload);
 
         // Emit to creator
         io.to(report.createdBy.toString()).emit('reportOverdue', payload);

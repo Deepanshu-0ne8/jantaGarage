@@ -151,6 +151,12 @@ const reportSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    gridX: {
+      type: Number,
+    },
+    gridY: {
+      type: Number,
+    },
   },
   {
     timestamps: true,
@@ -158,6 +164,7 @@ const reportSchema = new mongoose.Schema(
 );
 
 reportSchema.index({ location: "2dsphere" });
+reportSchema.index({ gridX: 1, gridY: 1 });
 
 const Report = mongoose.model("Report", reportSchema);
 
