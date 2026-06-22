@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, memo, useEffect } from 'react';
 import { useAuth } from '../context/authContext';
 import { updateProfileApi, removeDpApi } from '../services/UserServices'; // FIX: Changed from UserServices to UserService
 import Navbar from './navbar'; 
+import SessionManager from './SessionManager';
 
 const DEPARTMENT_OPTIONS = [
     "Water Supply & Sewage Department", "Public Health & Sanitation Department",
@@ -513,6 +514,9 @@ const Profile = () => {
                 </section>
               )}
             </div>
+
+            {/* Session Management */}
+            <SessionManager />
 
           </div>
         )}

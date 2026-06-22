@@ -19,23 +19,49 @@ const io = new Server(server, {
 app.set('io', io);
 export { io };
 
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from './config/env.js';
+import redis from './database/redis.js';
+
+// Middleware for Socket.io authentication
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) {
+    return next(new Error("Authentication error: No token provided"));
+  }
+  jwt.verify(token, JWT_SECRET, async (err, decoded) => {
+    if (err) return next(new Error("Authentication error: Invalid token"));
+    
+    try {
+      const exists = await redis.exists(`session:${decoded.sessionId}`);
+      if (!exists) {
+        return next(new Error("Authentication error: Session revoked or expired"));
+      }
+
+      socket.userId = decoded.userId;
+      socket.sessionId = decoded.sessionId;
+      socket.role = decoded.role;
+      next();
+    } catch (redisError) {
+      console.error("Redis error during socket auth:", redisError);
+      return next(new Error("Authentication error: Internal server error"));
+    }
+  });
+});
+
 io.on('connection', (socket) => {
-  console.log('🟢 Socket connected:', socket.id);
+  console.log('🟢 Socket connected:', socket.id, 'User:', socket.userId);
+
+  // Automatically join rooms based on verified token
+  socket.join(socket.userId);
+  socket.join('globalRoom');
+  if (socket.role === 'admin') {
+    socket.join('adminsRoom');
+  }
 
   socket.on('registerUser', (data) => {
-    let userId = data;
-    let role = null;
-    if (typeof data === 'object' && data !== null) {
-      userId = data.userId;
-      role = data.role;
-    }
-    if (!userId) return;
-    socket.join(userId); // private room named by user id
-    socket.join('globalRoom'); // common room for all users
-    if (role === 'admin') {
-      socket.join('adminsRoom');
-    }
-    console.log(`Socket ${socket.id} joined private room ${userId} and globalRoom` + (role === 'admin' ? ' and adminsRoom' : ''));
+    // Kept for backward compatibility if older clients still emit it
+    // We already handled joining rooms above using the verified token
   });
 
   socket.on('disconnect', () => {

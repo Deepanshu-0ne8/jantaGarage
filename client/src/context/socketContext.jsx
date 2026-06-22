@@ -9,15 +9,22 @@ const SocketContext = createContext();
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children }) => {
-  const { user } = useAuth();
-  const [socket, setSocket] = useState(null); // use state instead of ref
+  const { user, accessToken } = useAuth();
+  const [socket, setSocket] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !accessToken) {
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+      }
+      return;
+    }
 
     const newSocket = io(socketUrl, {
       withCredentials: true,
+      auth: { token: accessToken }
     });
 
     setSocket(newSocket);
@@ -26,7 +33,7 @@ export const SocketProvider = ({ children }) => {
 
     newSocket.on("connect", () => {
       console.log("✅ Connected to socket:", newSocket.id);
-      newSocket.emit("registerUser", { userId: user._id, role: user.role });
+      // Removed registerUser emit as we handle it on backend now via token
     });
 
     newSocket.on("newReport", (payload) => {
@@ -59,7 +66,7 @@ export const SocketProvider = ({ children }) => {
       newSocket.disconnect();
       setSocket(null);
     };
-  }, [user, queryClient]);
+  }, [user, accessToken, queryClient]); // Re-run if user or token changes
 
   return (
     <SocketContext.Provider value={socket}>
@@ -67,4 +74,3 @@ export const SocketProvider = ({ children }) => {
     </SocketContext.Provider>
   );
 };
-
