@@ -1,5 +1,5 @@
 import { assign } from "nodemailer/lib/shared/index.js";
-import { APP_PASS, DEFAULT_DP } from "../config/env.js";
+import { APP_PASS, DEFAULT_DP, USER_MAIL } from "../config/env.js";
 import Report from "../models/report.model.js";
 import User, { departmentList } from "../models/user.model.js";
 import { extractPublicId, uploadDpOnCloudinary } from "../utils/cloudinary.js";
@@ -9,7 +9,7 @@ import nodemailer from "nodemailer";
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'patidardeepanshu910@gmail.com',
+        user: USER_MAIL,
         pass: APP_PASS
     }
 });

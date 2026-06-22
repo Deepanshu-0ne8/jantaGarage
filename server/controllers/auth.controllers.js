@@ -3,7 +3,7 @@ import User from "../models/user.model.js";
 import Session from "../models/session.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { APP_PASS, JWT_EXPIRES_IN, JWT_SECRET, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN } from "../config/env.js";
+import { APP_PASS, JWT_EXPIRES_IN, JWT_SECRET, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN, USER_MAIL } from "../config/env.js";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { UAParser } from "ua-parser-js";
@@ -13,7 +13,7 @@ import redis from "../database/redis.js";
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'patidardeepanshu910@gmail.com',
+        user: USER_MAIL,
         pass: APP_PASS
     }
 });

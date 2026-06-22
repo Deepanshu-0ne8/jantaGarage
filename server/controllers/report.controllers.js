@@ -1,4 +1,4 @@
-import { APP_PASS } from "../config/env.js";
+import { APP_PASS, USER_MAIL } from "../config/env.js";
 import Report from "../models/report.model.js";
 import User from "../models/user.model.js";
 import { uploadrepOnCloudinary } from "../utils/cloudinary.js";
@@ -11,7 +11,7 @@ const GRID_SIZE = 0.01;
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'patidardeepanshu910@gmail.com',
+        user: USER_MAIL,
         pass: APP_PASS
     }
 });
@@ -349,6 +349,7 @@ export const getAllUnAssignedReports = async (req, res, next) => {
     next(error);
   }
 };
+
 export const getAllStaff = async (req, res, next) => {
     try {
       const { id }= req.params;
@@ -579,67 +580,6 @@ export const getAllAssignedReportsByAdmin = async (req, res, next) => {
     }
 }
 
-// export const notifyOnOverdueReports = async (req, res, next) => {
-//     try {
-//           const id = req.params;
-//         const report = await Report.findById(id);
-//         if (!report) {
-//             return res.status(404).json({
-//                 status: 'fail',
-//                 message: 'Report not found'
-//             });
-//         }
-
-//         if (report.status === 'Resolved') {
-//             return res.status(400).json({
-//                 status: 'fail',
-//                 message: "Resolved reports cannot be overdue."
-//             });
-//         }
-
-//         const nowTime = new Date().getTime();
-//         const deadlineTime = new Date(report.deadline).getTime();
-        
-//         if (nowTime <= deadlineTime) {
-//             return res.status(400).json({
-//                 status: 'fail',
-//                 message: "Report is not overdue yet."
-//             });
-//         }
-//         await transporter.sendMail({
-//             from: 'patidardeepanshu910@gmail.com',
-//             to: report.assignedTo.email,
-//             subject: 'Report overdue notification',
-//             text: `The report with the title: ${report.title} assigned to you is overdue. Please take immediate action to resolve it.`
-//         });
-
-//         res.status(200).json({
-//             status: 'success',
-//             message: 'Overdue notification sent successfully',
-//         });
-//   }
-// catch (error) {
-//         next(error);
-//     }
-// }
-// export const deleteReport = async (req, res, next) => {
-//     try {
-//         const { id } = req.params;
-//         const report = await Report.findByIdAndDelete(id);
-//         if (!report) {
-//             return res.status(404).json({
-//                 status: 'fail',
-//                 message: 'Report not found'
-//             });
-//         }
-//         res.status(200).json({
-//             status: 'success',
-//             message: 'Report deleted successfully',
-//         });
-//     } catch (error) {
-//         next(error)
-//     }
-// }
 export const downloadReportsCSV = async (req, res) => {
   try {
     const reports = await Report.find().lean();

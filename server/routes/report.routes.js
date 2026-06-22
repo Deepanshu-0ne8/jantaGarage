@@ -20,7 +20,6 @@ import multer from "multer";
 
 
 const reportRouter = express.Router();
-// const upload = multer({ dest: "uploads/" });
 
 reportRouter.post('/', authorize, upload.single('reportImage'), createReport);
 
@@ -49,8 +48,6 @@ reportRouter.patch('/toResolved/:id', authorize, updateReportStatusToResolved);
 reportRouter.patch('/reject/:id', authorize, rejectResolution);
 
 reportRouter.get('/assignedReports', authorize, getAllAssignedReportsByAdmin);
-
-// reportRouter.patch('/notifyForOverdue/:id', authorize, notifyOnOverdueReports);
 
 reportRouter.get("/download-csv", downloadReportsCSV);
 

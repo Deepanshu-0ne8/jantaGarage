@@ -3,7 +3,7 @@ import { connection } from '../config/queue.js';
 import Report from '../models/report.model.js';
 import User from '../models/user.model.js';
 import nodemailer from 'nodemailer';
-import { APP_PASS } from '../config/env.js';
+import { APP_PASS, USER_MAIL } from '../config/env.js';
 
 export const initReportWorker = (io) => {
   console.log('👷 Report worker initialization started');
@@ -105,13 +105,13 @@ export const initReportWorker = (io) => {
           const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-              user: 'patidardeepanshu910@gmail.com',
+              user: USER_MAIL,
               pass: APP_PASS,
             },
           });
 
           await transporter.sendMail({
-            from: 'patidardeepanshu910@gmail.com',
+            from: USER_MAIL,
             to: recipients.join(','),
             subject: `🚨 Overdue Report: ${report.title}`,
             text: `The report "${report.title}" (id: ${report._id}) has passed its deadline (${report.deadline}) and is now marked as overdue. Please take action.`,
