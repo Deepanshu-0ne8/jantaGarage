@@ -216,7 +216,7 @@ export const signIn = async (req, res, next) => {
 
         user.password = undefined;
 
-        res.cookie("refreshToken", newRefreshToken, {
+        res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: true,
     sameSite: "none",
