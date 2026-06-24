@@ -216,12 +216,12 @@ export const signIn = async (req, res, next) => {
 
         user.password = undefined;
 
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: "strict",
-            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-        }).json({
+        res.cookie("refreshToken", newRefreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    maxAge: 30 * 24 * 60 * 60 * 1000
+}).json({
             success: true,
             message: "User signed in successfully",
             data: {
@@ -280,11 +280,11 @@ export const refresh = async (req, res, next) => {
         await redis.set(`session:${session._id}`, 'active', 'EX', 30 * 24 * 60 * 60);
 
         res.cookie("refreshToken", newRefreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: "strict",
-            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-        }).json({
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    maxAge: 30 * 24 * 60 * 60 * 1000
+}).json({
             success: true,
             data: {
                 accessToken: newAccessToken
