@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { USER_MAIL , RESEND_API_KEY} from "../config/env";
+import { USER_MAIL , RESEND_API_KEY} from "../config/env.js";
 
 const resend = new Resend(RESEND_API_KEY);
 
