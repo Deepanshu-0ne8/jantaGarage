@@ -2,7 +2,7 @@ import { Worker } from 'bullmq';
 import { connection } from '../config/queue.js';
 import Report from '../models/report.model.js';
 import User from '../models/user.model.js';
-import { transporter } from '../utils/transporter.js';
+import { sendEmail } from '../utils/sendmail.js';
 import { USER_MAIL } from '../config/env.js';
 
 export const initReportWorker = (io) => {
@@ -33,7 +33,7 @@ export const initReportWorker = (io) => {
 
         // 2. Create notification for report creator (createdBy) and other involved parties
         const notificationMessage = `Report with Title "${report.title}" is now OVERDUE!`;
-        
+
         // Push notification to creator
         const creator = await User.findById(report.createdBy);
         if (creator) {
@@ -102,12 +102,16 @@ export const initReportWorker = (io) => {
         }
 
         if (recipients.length > 0) {
-          await transporter.sendMail({
-            from: USER_MAIL,
-            to: recipients.join(','),
-            subject: `🚨 Overdue Report: ${report.title}`,
-            text: `The report "${report.title}" (id: ${report._id}) has passed its deadline (${report.deadline}) and is now marked as overdue. Please take action.`,
-          });
+          await sendEmail(recipients.join(','), `🚨 Overdue Report: ${report.title}`, `
+          <html>
+          <body>
+            <h2>Overdue Report</h2>
+            <p>The report "${report.title}" (id: ${report._id}) has passed its deadline (${report.deadline}) and is now marked as overdue. Please take action.</p>
+            <p>Thank you,</p>
+            <p>Janta Garage Team</p>
+          </body>
+          </html>
+          `)
           console.log(`✉️ Overdue email sent to: ${recipients.join(', ')}`);
         }
 

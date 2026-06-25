@@ -4,7 +4,7 @@ import Report from "../models/report.model.js";
 import User, { departmentList } from "../models/user.model.js";
 import { extractPublicId, uploadDpOnCloudinary } from "../utils/cloudinary.js";
 import { v2 as cloudinary } from "cloudinary";
-import { transporter } from "../utils/transporter.js";
+import { sendEmail } from "../utils/sendmail.js";
 
 export const getProfile = async (req, res, next) => {
   try {
@@ -54,33 +54,33 @@ export const updateProfile = async (req, res, next) => {
     }
 
     if (file) {
-  const oldPublicId = req.user.displaypic?.publicId;
+      const oldPublicId = req.user.displaypic?.publicId;
 
-  const cloudinaryResponse =
-    await uploadDpOnCloudinary(file.buffer);
+      const cloudinaryResponse =
+        await uploadDpOnCloudinary(file.buffer);
 
-  if (!cloudinaryResponse) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to upload image"
-    });
-  }
+      if (!cloudinaryResponse) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to upload image"
+        });
+      }
 
-  req.user.displaypic = {
-    url: cloudinaryResponse.secure_url,
-    publicId: cloudinaryResponse.public_id
-  };
+      req.user.displaypic = {
+        url: cloudinaryResponse.secure_url,
+        publicId: cloudinaryResponse.public_id
+      };
 
-  if (oldPublicId) {
-    try {
-      await cloudinary.uploader.destroy(oldPublicId);
-    } catch (err) {
-      console.error(err);
+      if (oldPublicId) {
+        try {
+          await cloudinary.uploader.destroy(oldPublicId);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      isUpdated = true;
     }
-  }
-
-  isUpdated = true;
-}
 
     // Departments update with validation
     if (departments !== undefined) {
@@ -120,7 +120,7 @@ export const updateProfile = async (req, res, next) => {
     if (isUpdated) {
       const updatedUser = await req.user.save();
       return res.status(200).json({
-       success: true,
+        success: true,
         message: "Profile updated successfully.",
         warning: deletionWarning,
         data: updatedUser.toObject(),
@@ -185,186 +185,198 @@ export const removeDp = async (req, res, next) => {
 };
 
 export const getdepartmentalReport = async (req, res, next) => {
-    try {
-        if (req.user.role === 'citizen') {
-            return res.status(403).json({
-                status: 'fail',
-                message: 'You are not authorized to view departmental reports'
-            });
-        }
-
-        if(req.user.role === 'admin') {
-            const reports = await Report.find({});
-            return res.status(200).json({
-                success: true,
-                data: reports
-            });
-        }
-
-        const reports = await Report.find({ departments: { $in: req.user.departments } });
-
-        if (reports.length === 0) {
-            return res.status(200).json({
-                success: true,
-                data: []
-            });
-        }
-        // console.log(reports);
-        res.status(200).json({
-            success: true,
-            data: reports
-        });
-    } catch (error) {
-        next(error)
+  try {
+    if (req.user.role === 'citizen') {
+      return res.status(403).json({
+        status: 'fail',
+        message: 'You are not authorized to view departmental reports'
+      });
     }
-} 
+
+    if (req.user.role === 'admin') {
+      const reports = await Report.find({});
+      return res.status(200).json({
+        success: true,
+        data: reports
+      });
+    }
+
+    const reports = await Report.find({ departments: { $in: req.user.departments } });
+
+    if (reports.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: []
+      });
+    }
+    // console.log(reports);
+    res.status(200).json({
+      success: true,
+      data: reports
+    });
+  } catch (error) {
+    next(error)
+  }
+}
 
 export const getReportsForVerification = async (req, res, next) => {
-    try {
-      const reportsId = req.user.reportsForVerification;
-      if(!reportsId || reportsId.length === 0) {
-        return res.status(200).json({
-            success: true,
-            data: []
-        });
-      }
-      const reports = await Report.find({_id: { $in: reportsId }});
-        res.status(200).json({
-            success: true,
-            data: reports
-        })
-    } catch (error) {
-        next(error)
+  try {
+    const reportsId = req.user.reportsForVerification;
+    if (!reportsId || reportsId.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: []
+      });
     }
+    const reports = await Report.find({ _id: { $in: reportsId } });
+    res.status(200).json({
+      success: true,
+      data: reports
+    })
+  } catch (error) {
+    next(error)
+  }
 }
 
 export const assignReportToStaff = async (req, res, next) => {
-    try {
+  try {
 
-      if (req.user.role !== "admin") {
-        return res.status(403).json({
-          success: false,
-          message: "Only admins can assign reports to staff.",
-        });
-      }
-
-      const { reportId, staffId } = req.body;
-
-      if (!reportId || !staffId) {
-        return res.status(400).json({
-          success: false,
-          message: "Both reportId and staffId are required.",
-        });
-      }
-
-      const report = await Report.findById(reportId);
-      if (!report) {
-        return res.status(404).json({
-          success: false,
-          message: "Report not found.",
-        });
-      }
-
-      const staff = await User.findById(staffId);
-      if (!staff || (staff.role === "citizen" || staff.role === "admin")) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid staff ID or user is not a staff member.",
-        });
-      }
-
-      if (report.isAssigned) {
-        return res.status(400).json({
-          success: false,
-          message: "Report is already assigned to a staff member.",
-        });
-      }
-
-      report.isAssigned = true;
-      report.assignedTo = {
-        name: staff.name,
-        userName: staff.userName,
-        _id: staff._id,
-        email: staff.email,
-      };
-      report.assignedBy = {
-        name: req.user.name,
-        userName: req.user.userName,
-        _id: req.user._id,
-        email: req.user.email
-      };
-      await report.save();
-
-      staff.reportsAssigned.push(report._id);
-      staff.notifications.push({
-        reportId: report._id,
-        message: `You have been assigned a new report with the title: ${report.title}.`,
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Only admins can assign reports to staff.",
       });
-      await staff.save();
-
-      await transporter.sendMail({
-            from: USER_MAIL,
-            to: staff.email,
-            subject: 'New Report Assignment',
-            text: `You have been assigned a new report with the title: ${report.title}. Please check your dashboard for more details.`
-        });
-
-      res.status(200).json({
-        success: true,
-        message: "Report assigned to staff successfully.",
-        data: { report, staff },
-      });
-
-      const io = req.app.get('io');
-      if (io) {
-        io.to('globalRoom').emit('reportUpdated', report);
-        io.to(staff._id.toString()).emit('newNotification');
-      }
-    } catch (error) {
-      next(error);
     }
+
+    const { reportId, staffId } = req.body;
+
+    if (!reportId || !staffId) {
+      return res.status(400).json({
+        success: false,
+        message: "Both reportId and staffId are required.",
+      });
+    }
+
+    const report = await Report.findById(reportId);
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found.",
+      });
+    }
+
+    const staff = await User.findById(staffId);
+    if (!staff || (staff.role === "citizen" || staff.role === "admin")) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid staff ID or user is not a staff member.",
+      });
+    }
+
+    if (report.isAssigned) {
+      return res.status(400).json({
+        success: false,
+        message: "Report is already assigned to a staff member.",
+      });
+    }
+
+    report.isAssigned = true;
+    report.assignedTo = {
+      name: staff.name,
+      userName: staff.userName,
+      _id: staff._id,
+      email: staff.email,
+    };
+    report.assignedBy = {
+      name: req.user.name,
+      userName: req.user.userName,
+      _id: req.user._id,
+      email: req.user.email
+    };
+    await report.save();
+
+    staff.reportsAssigned.push(report._id);
+    staff.notifications.push({
+      reportId: report._id,
+      message: `You have been assigned a new report with the title: ${report.title}.`,
+    });
+    await staff.save();
+
+    // await transporter.sendMail({
+    //   from: USER_MAIL,
+    //   to: staff.email,
+    //   subject: 'New Report Assignment',
+    //   text: `You have been assigned a new report with the title: ${report.title}. Please check your dashboard for more details.`
+    // });
+
+    await sendEmail(staff.email, "New Report Assignment", `
+    <html>
+    <body>
+      <h2>New Report Assignment</h2>
+      <p>Dear ${staff.name},</p>
+      <p>You have been assigned a new report with the title: ${report.title}. Please check your dashboard for more details.</p>
+      <p>Thank you,</p>
+      <p>Janta Garage Team</p>
+    </body>
+    </html>
+    `)
+
+    res.status(200).json({
+      success: true,
+      message: "Report assigned to staff successfully.",
+      data: { report, staff },
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to('globalRoom').emit('reportUpdated', report);
+      io.to(staff._id.toString()).emit('newNotification');
+    }
+  } catch (error) {
+    next(error);
+  }
 }
 
 export const getAssignedReports = async (req, res, next) => {
-    try {
-      const user = req.user;
-      
-      if(user.role === "citizen" || user.role === "admin") {
-        return res.status(403).json({
-            success: false,
-            message: "Only staff members can have assigned reports."
-        });
-      }
-      
-      const reportsId = user.reportsAssigned;
-      
-      if(!reportsId || reportsId.length === 0) {
-        return res.status(200).json({
-            success: true,
-            data: [],
-            message: 'No assigned reports found for this staff'
-        });
-      }
+  try {
+    const user = req.user;
 
-      const reports = await Report.find({_id: { $in: reportsId }})
-        .sort({ createdAt: -1 });
-        
-      if(reports.length === 0) {
-        return res.status(200).json({
-            success: true,
-            message: 'No active reports found for this staff',
-            data: []
-        });
-      }
-      
-      res.status(200).json({
-          success: true,
-          data: reports
+    if (user.role === "citizen" || user.role === "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Only staff members can have assigned reports."
       });
-
-    } catch (error) {
-      next(error);
     }
+
+    const reportsId = user.reportsAssigned;
+
+    if (!reportsId || reportsId.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        message: 'No assigned reports found for this staff'
+      });
+    }
+
+    const reports = await Report.find({ _id: { $in: reportsId } })
+      .sort({ createdAt: -1 });
+
+    if (reports.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No active reports found for this staff',
+        data: []
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: reports
+    });
+
+  } catch (error) {
+    next(error);
+  }
 }
 
 export const getNotifications = async (req, res, next) => {
@@ -381,8 +393,8 @@ export const getNotifications = async (req, res, next) => {
 export const removeNotification = async (req, res, next) => {
   try {
     const { notificationId } = req.params;
-    
-    if(!notificationId) {
+
+    if (!notificationId) {
       return res.status(400).json({
         success: false,
         message: 'Notification ID is required'
@@ -402,7 +414,7 @@ export const removeNotification = async (req, res, next) => {
 
     req.user.notifications.splice(notificationIndex, 1);
 
-    
+
     await req.user.save();
     res.status(200).json({
       success: true,

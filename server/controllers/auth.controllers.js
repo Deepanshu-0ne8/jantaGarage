@@ -3,13 +3,12 @@ import User from "../models/user.model.js";
 import Session from "../models/session.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { APP_PASS, JWT_EXPIRES_IN, JWT_SECRET, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN, USER_MAIL } from "../config/env.js";
+import { JWT_EXPIRES_IN, JWT_SECRET, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN, USER_MAIL } from "../config/env.js";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
 import { UAParser } from "ua-parser-js";
 import { io } from "../server.js";
 import redis from "../database/redis.js";
-import { transporter } from "../utils/transporter.js";
+import { sendEmail } from "../utils/sendmail.js";
 
 const generateOTP = () => crypto.randomInt(100000, 999999).toString();
 
@@ -70,12 +69,14 @@ export const signUp = async (req, res, next) => {
         });
         await user.save({ session });
 
-        await transporter.sendMail({
-            from: USER_MAIL,
-            to: email,
-            subject: 'OTP Verification',
-            text: `Your OTP is: ${otp}`
-        });
+        // await transporter.sendMail({
+        //     from: USER_MAIL,
+        //     to: email,
+        //     subject: 'OTP Verification',
+        //     text: `Your OTP is: ${otp}`
+        // });
+
+        await sendEmail(email, "OTP Verification", `<p>Your OTP is: ${otp}</p>`);
 
         await session.commitTransaction();
 
@@ -112,7 +113,7 @@ export const verifyOTP = async (req, res, next) => {
 
         res.json({
             success: true,
-            message: 'Email verified successfully. You can now log in.' 
+            message: 'Email verified successfully. You can now log in.'
         });
     } catch (error) {
         next(error);
@@ -132,16 +133,18 @@ export const resendOTP = async (req, res, next) => {
         user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
         await user.save();
 
-        await transporter.sendMail({
-            from: USER_MAIL,
-            to: email,
-            subject: 'Resend OTP Verification',
-            text: `Your new OTP is: ${otp}`
-        });
+        // await transporter.sendMail({
+        //     from: USER_MAIL,
+        //     to: email,
+        //     subject: 'Resend OTP Verification',
+        //     text: `Your new OTP is: ${otp}`
+        // });
+
+        await sendEmail(email, "Resend OTP Verification", `<p>Your new OTP is: ${otp}</p>`);
 
         res.json({
             success: true,
-            message: 'OTP resent successfully.' 
+            message: 'OTP resent successfully.'
         });
     } catch (error) {
         next(error);
@@ -176,7 +179,7 @@ export const signIn = async (req, res, next) => {
         const parser = new UAParser(req.headers["user-agent"]);
         const result = parser.getResult();
         const deviceName = result.device.model || result.os.name || "Unknown Device";
-        
+
         // Create session
         const session = await Session.create({
             userId: user._id,
@@ -210,11 +213,11 @@ export const signIn = async (req, res, next) => {
         user.password = undefined;
 
         res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    maxAge: 30 * 24 * 60 * 60 * 1000
-}).json({
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 30 * 24 * 60 * 60 * 1000
+        }).json({
             success: true,
             message: "User signed in successfully",
             data: {
@@ -229,8 +232,8 @@ export const signIn = async (req, res, next) => {
 
 export const refresh = async (req, res, next) => {
     try {
-         console.log("req.headers.cookie =", req.headers.cookie);
-    console.log("req.cookies =", req.cookies);
+        console.log("req.headers.cookie =", req.headers.cookie);
+        console.log("req.cookies =", req.cookies);
         const refreshToken = req.cookies.refreshToken;
         if (!refreshToken) {
             return res.status(401).json({ success: false, message: "No refresh token provided" });
@@ -275,11 +278,11 @@ export const refresh = async (req, res, next) => {
         await redis.set(`session:${session._id}`, 'active', 'EX', 30 * 24 * 60 * 60);
 
         res.cookie("refreshToken", newRefreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    maxAge: 30 * 24 * 60 * 60 * 1000
-}).json({
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 30 * 24 * 60 * 60 * 1000
+        }).json({
             success: true,
             data: {
                 accessToken: newAccessToken
@@ -324,7 +327,7 @@ export const getSessions = async (req, res, next) => {
         const sessions = await Session.find({ userId: req.user._id, revokedAt: null, expiresAt: { $gt: new Date() } })
             .select("-refreshTokenHash")
             .sort({ lastUsedAt: -1 });
-            
+
         res.json({
             success: true,
             data: sessions
@@ -338,7 +341,7 @@ export const logoutDevice = async (req, res, next) => {
     try {
         const { sessionId } = req.params;
         const session = await Session.findOne({ _id: sessionId, userId: req.user._id });
-        
+
         if (!session) {
             return res.status(404).json({ success: false, message: "Session not found" });
         }
@@ -360,7 +363,7 @@ export const logoutDevice = async (req, res, next) => {
 export const logoutAll = async (req, res, next) => {
     try {
         const sessions = await Session.find({ userId: req.user._id, revokedAt: null });
-        
+
         for (const session of sessions) {
             session.revokedAt = new Date();
             session.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Hybrid TTL
