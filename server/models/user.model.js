@@ -75,11 +75,15 @@ const userSchema = new mongoose.Schema(
       match: [/^\d{10}$/, "please fill a valid 10 digit contact number"],
     },
     displaypic: {
-      url: {
+    url: {
         type: String,
-        default: DEFAULT_DP,
-      },
+        default: DEFAULT_DP
     },
+    publicId: {
+        type: String,
+        default: null
+    }
+},
     address: {
       type: String,
       trim: true,

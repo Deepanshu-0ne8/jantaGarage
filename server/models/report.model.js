@@ -66,9 +66,12 @@ const reportSchema = new mongoose.Schema(
       default: "OPEN",
     },
     image: {
-      url: {
-        type: String,
-      },
+        url: {
+            type: String
+        },
+        publicId: {
+            type: String
+        }
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

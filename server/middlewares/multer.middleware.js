@@ -1,26 +1,31 @@
 import multer from "multer";
-import path from "path";
-import fs from "fs";
 
-// Define the temporary storage path
-const uploadDir = "public/temp";
+const storage = multer.memoryStorage();
 
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+const fileFilter = (req, file, cb) => {
+    const allowedMimeTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp"
+    ];
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-       
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    if (allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(
+            new Error(
+                "Only JPG, JPEG, PNG and WEBP images are allowed"
+            ),
+            false
+        );
     }
-});
+};
 
 export const upload = multer({
-    storage: storage
+    storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10 MB
+    },
+    fileFilter
 });

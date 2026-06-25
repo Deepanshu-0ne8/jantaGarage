@@ -1,8 +1,9 @@
 import { v2 as cloudinary } from 'cloudinary';
-import { 
-    CLOUDINARY_CLOUD_NAME, 
-    CLOUDINARY_API_KEY, 
-    CLOUDINARY_API_SECRET 
+import streamifier from 'streamifier';
+import {
+    CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_API_KEY,
+    CLOUDINARY_API_SECRET
 } from '../config/env.js';
 
 cloudinary.config({
@@ -11,57 +12,64 @@ cloudinary.config({
     api_secret: CLOUDINARY_API_SECRET
 });
 
-/**
- 
- * @param {string} localFilePath 
- * @returns {Promise<object | null>}
- */
-export const uploadrepOnCloudinary = async (localFilePath) => {
+export const uploadrepOnCloudinary = async (buffer) => {
     try {
-        if (!localFilePath) return null;
+        if (!buffer) return null;
 
-        const response = await cloudinary.uploader.upload(localFilePath, {
-            resource_type: "auto",
-            folder: "jantaGarage/reportsimage" 
+        return await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    resource_type: "auto",
+                    folder: "jantaGarage/reportsimage"
+                },
+                (error, result) => {
+                    if (error) return reject(error);
+                    resolve(result);
+                }
+            );
+
+            streamifier.createReadStream(buffer).pipe(stream);
         });
 
-       
-        return response;
-
     } catch (error) {
-        
         console.error("Cloudinary upload failed:", error);
         return null;
     }
-}
+};
 
-export const uploadDpOnCloudinary = async (localFilePath) => {
+export const uploadDpOnCloudinary = async (buffer) => {
     try {
-        if (!localFilePath) return null;
+        if (!buffer) return null;
 
-        const response = await cloudinary.uploader.upload(localFilePath, {
-            resource_type: "auto",
-            folder: "jantaGarage/DisplayPics" 
+        return await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    resource_type: "auto",
+                    folder: "jantaGarage/DisplayPics"
+                },
+                (error, result) => {
+                    if (error) return reject(error);
+                    resolve(result);
+                }
+            );
+
+            streamifier.createReadStream(buffer).pipe(stream);
         });
 
-        
-        return response;
-
     } catch (error) {
-        
         console.error("Cloudinary upload failed:", error);
         return null;
     }
-}
+};
 
 export const extractPublicId = (url) => {
-  try {
-    const parts = url.split("/");
-    const versionAndPublicId = parts.slice(7).join("/"); 
-    const withoutExtension = versionAndPublicId.replace(/\.[^/.]+$/, ""); 
-    return withoutExtension.replace(/^v[0-9]+\//, "");
-  } catch (err) {
-    console.error("Invalid Cloudinary URL");
-    return null;
-  }
-}
+    try {
+        const parts = url.split("/");
+        const versionAndPublicId = parts.slice(7).join("/");
+        const withoutExtension = versionAndPublicId.replace(/\.[^/.]+$/, "");
+        return withoutExtension.replace(/^v[0-9]+\//, "");
+    } catch (err) {
+        console.error("Invalid Cloudinary URL");
+        return null;
+    }
+};

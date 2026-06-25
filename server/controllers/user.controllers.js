@@ -62,34 +62,33 @@ export const updateProfile = async (req, res, next) => {
     }
 
     if (file) {
-      const localImagePath = file.path;
-      const oldUrl = req.user.displaypic?.url;
+  const oldPublicId = req.user.displaypic?.publicId;
 
-      const cloudinaryResponse = await uploadDpOnCloudinary(localImagePath);
+  const cloudinaryResponse =
+    await uploadDpOnCloudinary(file.buffer);
 
-      if (!cloudinaryResponse || !cloudinaryResponse.url) {
-        return res.status(500).json({
-          success: false,
-          status: "error",
-          message: "Failed to upload image to Cloudinary. Please try again.",
-        });
-      }
+  if (!cloudinaryResponse) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to upload image"
+    });
+  }
 
-      req.user.displaypic.url = cloudinaryResponse.url;
-      isUpdated = true;
+  req.user.displaypic = {
+    url: cloudinaryResponse.secure_url,
+    publicId: cloudinaryResponse.public_id
+  };
 
-      if (oldUrl && oldUrl !== DEFAULT_DP) {
-        const publicId = extractPublicId(oldUrl);
-        if (publicId) {
-          try {
-            await cloudinary.uploader.destroy(publicId);
-          } catch (error) {
-            console.error("Error deleting old image:", error);
-            deletionWarning = "Old image could not be deleted from Cloudinary.";
-          }
-        }
-      }
+  if (oldPublicId) {
+    try {
+      await cloudinary.uploader.destroy(oldPublicId);
+    } catch (err) {
+      console.error(err);
     }
+  }
+
+  isUpdated = true;
+}
 
     // Departments update with validation
     if (departments !== undefined) {
@@ -149,43 +148,49 @@ export const updateProfile = async (req, res, next) => {
 
 
 export const removeDp = async (req, res, next) => {
-   try {
-     const oldUrl = req.user.displaypic.url;
-    if(oldUrl === DEFAULT_DP) {
-        return res.status(200).json({
-            success: true,
-            message: "NO profile pic to delete",
-            data: req.user
-        })
-    }
+  try {
+    const currentDp = req.user.displaypic;
 
-    if (oldUrl) {
-        const publicId = extractPublicId(oldUrl);
-        if (publicId) {
-          try {
-            await cloudinary.uploader.destroy(publicId);
-          } catch (error) {
-            res.status(404).json({
-                success:false,
-                message:"deletion failed"
-            })
-            next(error)
-          }
-        }
-      }
-
-      req.user.displaypic.url = DEFAULT_DP;
-
-      const updatedUser = await req.user.save();
+    if (!currentDp || currentDp.url === DEFAULT_DP) {
       return res.status(200).json({
         success: true,
-        message: "Profile updated successfully",
-        data: updatedUser.toObject(),
+        message: "No profile picture to delete",
+        data: req.user.toObject(),
       });
-   } catch (error) {
+    }
+
+    const publicId = currentDp.publicId;
+
+    if (publicId) {
+      try {
+        await cloudinary.uploader.destroy(publicId);
+      } catch (error) {
+        console.error("Cloudinary deletion failed:", error);
+
+        return res.status(500).json({
+          success: false,
+          message: "Failed to delete profile picture from Cloudinary",
+        });
+      }
+    }
+
+    req.user.displaypic = {
+      url: DEFAULT_DP,
+      publicId: null,
+    };
+
+    const updatedUser = await req.user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile picture removed successfully",
+      data: updatedUser.toObject(),
+    });
+  } catch (error) {
+    console.error("REMOVE DP ERROR:", error);
     next(error);
-   }
-}
+  }
+};
 
 export const getdepartmentalReport = async (req, res, next) => {
     try {
