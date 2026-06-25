@@ -241,12 +241,14 @@ export const signIn = async (req, res, next) => {
 
 export const refresh = async (req, res, next) => {
     try {
+         console.log("req.headers.cookie =", req.headers.cookie);
+    console.log("req.cookies =", req.cookies);
         const refreshToken = req.cookies.refreshToken;
         if (!refreshToken) {
             return res.status(401).json({ success: false, message: "No refresh token provided" });
         }
 
-        const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET || JWT_SECRET);
+        const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
         const session = await Session.findById(decoded.sessionId);
 
         if (!session || session.revokedAt || session.expiresAt < new Date()) {
