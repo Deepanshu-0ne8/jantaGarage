@@ -4,6 +4,7 @@ import User from "../models/user.model.js";
 import { uploadrepOnCloudinary } from "../utils/cloudinary.js";
 import { Parser } from "json2csv";
 import { reportQueue } from "../config/queue.js";
+import { sendEmail } from "../utils/sendmail.js";
 
 const GRID_SIZE = 0.01;
 
