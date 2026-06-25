@@ -11,11 +11,16 @@ import { io } from "../server.js";
 import redis from "../database/redis.js";
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: USER_MAIL,
-        pass: APP_PASS
-    }
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: USER_MAIL,
+    pass: APP_PASS,
+  },
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
 });
 
 const generateOTP = () => crypto.randomInt(100000, 999999).toString();

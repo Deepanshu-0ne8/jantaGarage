@@ -7,11 +7,16 @@ import { v2 as cloudinary } from "cloudinary";
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: USER_MAIL,
-        pass: APP_PASS
-    }
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: USER_MAIL,
+    pass: APP_PASS,
+  },
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
 });
 
 export const getProfile = async (req, res, next) => {

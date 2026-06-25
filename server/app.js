@@ -9,6 +9,8 @@ import reportRoutes from "./routes/report.routes.js";
 import { CLIENT_URL } from './config/env.js';
 
 const app = express();
+app.set("trust proxy", true);
+
 
 app.use(
   cors({

@@ -9,13 +9,17 @@ import { reportQueue } from "../config/queue.js";
 const GRID_SIZE = 0.01;
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: USER_MAIL,
-    pass: APP_PASS
-  }
+    pass: APP_PASS,
+  },
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
 });
-
 export const createReport = async (req, res, next) => {
   try {
     const parsedLocation = JSON.parse(req.body.location);
@@ -23,7 +27,7 @@ export const createReport = async (req, res, next) => {
     const gridX = Math.floor(lat / GRID_SIZE);
     const gridY = Math.floor(lng / GRID_SIZE);
 
-    let image = undefined;
+    let image;
 
     if (req.file) {
       const cloudinaryResponse =
@@ -67,6 +71,7 @@ export const createReport = async (req, res, next) => {
     else
       report.deadline = new Date(createdAt.getTime() + 3 * 24 * 60 * 60 * 1000);
     await report.save();
+    console.log(report)
 
     // Schedule delayed job for overdue report check
     const delay = report.deadline.getTime() - Date.now();
@@ -91,6 +96,8 @@ export const createReport = async (req, res, next) => {
       });
       await admin.save();
     }
+
+    console.log("Admin notifications sent and updated");
 
     // You might want to remove the temporary file from the local server after successful upload.
     // For that, you'd need to import 'fs' and call fs.unlinkSync(localImagePath);

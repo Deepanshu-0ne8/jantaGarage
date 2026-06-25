@@ -103,12 +103,17 @@ export const initReportWorker = (io) => {
 
         if (recipients.length > 0) {
           const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-              user: USER_MAIL,
-              pass: APP_PASS,
-            },
-          });
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: USER_MAIL,
+    pass: APP_PASS,
+  },
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
+});
 
           await transporter.sendMail({
             from: USER_MAIL,
