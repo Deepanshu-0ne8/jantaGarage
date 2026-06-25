@@ -80,7 +80,7 @@ export const createReport = async (req, res, next) => {
     const admins = await User.find({ role: 'admin' });
     for (const admin of admins) {
       await transporter.sendMail({
-        from: 'patidardeepanshu910@gmail.com',
+        from: USER_MAIL,
         to: admin.email,
         subject: 'New Report Created',
         text: `A new report has been created with the title: ${report.title}. Please review it at your earliest convenience.`
@@ -247,7 +247,7 @@ export const updateReportStatusTOResolvedNotifiction = async (req, res, next) =>
     }
 
     await transporter.sendMail({
-      from: 'patidardeepanshu910@gmail.com',
+      from: USER_MAIL,
       to: user.email,
       subject: 'Problem Resolved verification',
       text: `Your report with the title: ${report.title} has been marked as resolved. Please verify the resolution at your earliest convenience.`
@@ -385,7 +385,7 @@ export const updateReportStatusToResolved = async (req, res, next) => {
 
     if (staff) {
       await transporter.sendMail({
-        from: 'patidardeepanshu910@gmail.com',
+        from: USER_MAIL,
         to: staff.email,
         subject: 'Problem Resolved verification done by Creator',
         text: `The creator of the report with the title: ${report.title} has verified the resolution. Thank you for your efforts!`
@@ -401,7 +401,7 @@ export const updateReportStatusToResolved = async (req, res, next) => {
     const admins = await User.find({ role: 'admin' });
     admins.forEach(async (admin) => {
       await transporter.sendMail({
-        from: 'patidardeepanshu910@gmail.com',
+        from: USER_MAIL,
         to: admin.email,
         subject: 'Report Resolved',
         text: `The creator of the report with the title: ${report.title} has verified the resolution. Thank you for your efforts!`
@@ -476,7 +476,7 @@ export const rejectResolution = async (req, res, next) => {
 
     if (staff) {
       await transporter.sendMail({
-        from: 'patidardeepanshu910@gmail.com',
+        from: USER_MAIL,
         to: staff.email,
         subject: 'Problem Resolved verification Rejected by Creator',
         text: `The creator of the report with the title: ${report.title} has rejected the resolution. Please look into it again.`

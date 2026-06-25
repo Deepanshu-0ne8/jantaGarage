@@ -78,7 +78,7 @@ export const signUp = async (req, res, next) => {
         await user.save({ session });
 
         await transporter.sendMail({
-            from: 'patidardeepanshu910@gmail.com',
+            from: USER_MAIL,
             to: email,
             subject: 'OTP Verification',
             text: `Your OTP is: ${otp}`
@@ -140,7 +140,7 @@ export const resendOTP = async (req, res, next) => {
         await user.save();
 
         await transporter.sendMail({
-            from: 'patidardeepanshu910@gmail.com',
+            from: USER_MAIL,
             to: email,
             subject: 'Resend OTP Verification',
             text: `Your new OTP is: ${otp}`

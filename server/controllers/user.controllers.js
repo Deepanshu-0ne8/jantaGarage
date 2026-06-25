@@ -311,7 +311,7 @@ export const assignReportToStaff = async (req, res, next) => {
       await staff.save();
 
       await transporter.sendMail({
-            from: 'patidardeepanshu910@gmail.com',
+            from: USER_MAIL,
             to: staff.email,
             subject: 'New Report Assignment',
             text: `You have been assigned a new report with the title: ${report.title}. Please check your dashboard for more details.`
