@@ -2,8 +2,8 @@ import { Worker } from 'bullmq';
 import { connection } from '../config/queue.js';
 import Report from '../models/report.model.js';
 import User from '../models/user.model.js';
-import nodemailer from 'nodemailer';
-import { APP_PASS, USER_MAIL } from '../config/env.js';
+import { transporter } from '../utils/transporter.js';
+import { USER_MAIL } from '../config/env.js';
 
 export const initReportWorker = (io) => {
   console.log('👷 Report worker initialization started');
@@ -102,19 +102,6 @@ export const initReportWorker = (io) => {
         }
 
         if (recipients.length > 0) {
-          const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: USER_MAIL,
-    pass: APP_PASS,
-  },
-  connectionTimeout: 30000,
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
-});
-
           await transporter.sendMail({
             from: USER_MAIL,
             to: recipients.join(','),

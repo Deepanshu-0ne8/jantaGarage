@@ -4,20 +4,7 @@ import Report from "../models/report.model.js";
 import User, { departmentList } from "../models/user.model.js";
 import { extractPublicId, uploadDpOnCloudinary } from "../utils/cloudinary.js";
 import { v2 as cloudinary } from "cloudinary";
-import nodemailer from "nodemailer";
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: USER_MAIL,
-    pass: APP_PASS,
-  },
-  connectionTimeout: 30000,
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
-});
+import { transporter } from "../utils/transporter.js";
 
 export const getProfile = async (req, res, next) => {
   try {

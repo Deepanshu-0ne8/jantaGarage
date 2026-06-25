@@ -9,19 +9,7 @@ import nodemailer from "nodemailer";
 import { UAParser } from "ua-parser-js";
 import { io } from "../server.js";
 import redis from "../database/redis.js";
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: USER_MAIL,
-    pass: APP_PASS,
-  },
-  connectionTimeout: 30000,
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
-});
+import { transporter } from "../utils/transporter.js";
 
 const generateOTP = () => crypto.randomInt(100000, 999999).toString();
 
