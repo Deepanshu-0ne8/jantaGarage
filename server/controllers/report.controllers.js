@@ -111,11 +111,53 @@ export const createReport = async (req, res, next) => {
 
 export const getAllReports = async (req, res, next) => {
   try {
-    const reports = await Report.find();
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const skip = (page - 1) * limit;
+
+    const totalReports = await Report.countDocuments();
+    const reports = await Report.find().sort({ createdAt: -1 }).skip(skip).limit(limit);
+
+    const statsAggr = await Report.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    // Format stats into a usable object
+    const stats = {
+      total: totalReports,
+      resolved: 0,
+      inProgress: 0,
+      pending: 0 // OPEN is considered Pending on frontend
+    };
+
+    statsAggr.forEach(stat => {
+      if (stat._id === 'Resolved') stats.resolved = stat.count;
+      else if (stat._id === 'IN_PROGRESS') stats.inProgress = stat.count;
+      else if (stat._id === 'OPEN') stats.pending = stat.count;
+    });
+
+    // Also we need avgResolutionTime
+    const resolvedReports = await Report.find({ status: "Resolved" }).select("createdAt updatedAt");
+    const avgMs = resolvedReports.length > 0 
+      ? resolvedReports.reduce((acc, r) => acc + (new Date(r.updatedAt) - new Date(r.createdAt)), 0) / resolvedReports.length 
+      : 0;
 
     res.status(200).json({
       status: 'success',
-      data: reports
+      data: reports,
+      stats: stats,
+      avgResolutionTimeMs: avgMs,
+      pagination: {
+        total: totalReports,
+        page,
+        limit,
+        totalPages: Math.ceil(totalReports / limit)
+      }
     });
   } catch (error) {
     next(error)

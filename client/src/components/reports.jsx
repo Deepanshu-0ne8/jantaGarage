@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState } from "react";
 import Modal from "react-modal";
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from "recharts";
-import { CSVLink } from "react-csv";
 import api from "../api/axios";
 import Navbar from "../components/navbar";
 import { useQuery } from "@tanstack/react-query";
@@ -11,27 +10,21 @@ Modal.setAppElement("#root");
 const Reports = () => {
   const [selectedReport, setSelectedReport] = useState(null);
 
-  const { data: reports = [], isLoading } = useQuery({
-    queryKey: ["reports", "all"],
+  const [page, setPage] = useState(1);
+  const limit = 20;
+
+  const { data = {}, isLoading } = useQuery({
+    queryKey: ["reports", "all", page],
     queryFn: async () => {
-      const res = await api.get("/reports");
-      return res.data.data || [];
+      const res = await api.get(`/reports?page=${page}&limit=${limit}`);
+      return res.data;
     },
   });
 
-  const stats = useMemo(() => {
-    const totalReports = reports.length;
-    const resolvedReports = reports.filter(r => r.status === "Resolved").length;
-    const inProgressReports = reports.filter(r => r.status === "IN_PROGRESS").length;
-    const pendingReports = totalReports - resolvedReports - inProgressReports;
-
-    return {
-      total: totalReports,
-      resolved: resolvedReports,
-      pending: pendingReports,
-      inProgress: inProgressReports,
-    };
-  }, [reports]);
+  const reports = data.data || [];
+  const stats = data.stats || { total: 0, resolved: 0, pending: 0, inProgress: 0 };
+  const pagination = data.pagination || { totalPages: 1, page: 1, total: 0 };
+  const avgResolutionTimeMs = data.avgResolutionTimeMs || 0;
 
 
   const pieData = [
@@ -41,25 +34,24 @@ const Reports = () => {
   ];
   const COLORS = ["#10b981", "#f59e0b", "#f43f5e"]; // Tailwind Emerald, Amber, Rose
 
-  const csvHeaders = [
-    { label: "Title", key: "title" },
-    { label: "Description", key: "description" },
-    { label: "Status", key: "status" },
-    { label: "Created At", key: "createdAt" },
-    { label: "Updated At", key: "updatedAt" },
-  ];
-  
-  // Calculate average resolution time in milliseconds
-  const resolvedReports = reports.filter(r => r.status === "Resolved");
-  const avgMs = resolvedReports.length > 0
-    ? resolvedReports.reduce((acc, r) => acc + (new Date(r.updatedAt) - new Date(r.createdAt)), 0) 
-      / resolvedReports.length
-    : 0;
+  const handleDownloadCSV = async () => {
+    try {
+      const response = await api.get("/reports/download-csv", { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "reports_data.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      console.error("Failed to download CSV", error);
+    }
+  };
 
   // Convert ms to days and hours
-  const avgDays = Math.floor(avgMs / (1000 * 60 * 60 * 24));
-  const avgHours = Math.floor((avgMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
+  const avgDays = Math.floor(avgResolutionTimeMs / (1000 * 60 * 60 * 24));
+  const avgHours = Math.floor((avgResolutionTimeMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const avgResolutionTime = `${avgDays}d ${avgHours}h`;
 
   const statusColors = {
@@ -85,9 +77,9 @@ const Reports = () => {
           </div>
           
           <div className="flex items-center gap-4">
-             <CSVLink data={reports} headers={csvHeaders} filename="reports_data.csv" className="inline-flex items-center justify-center gap-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-600/50 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-lg hover:shadow-blue-500/20 w-full md:w-auto">
+             <button onClick={handleDownloadCSV} className="inline-flex items-center justify-center gap-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-600/50 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-lg hover:shadow-blue-500/20 w-full md:w-auto">
               <i className="fas fa-download text-blue-400"></i> Export CSV
-            </CSVLink>
+            </button>
           </div>
         </div>
 
@@ -156,7 +148,7 @@ const Reports = () => {
              </div>
              <h3 className="text-lg font-bold text-slate-300 mb-2">Average Resolution Time</h3>
              <p className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-400 mb-4">{avgResolutionTime}</p>
-             <p className="text-xs text-slate-500">Based on {resolvedReports.length} resolved issues.</p>
+             <p className="text-xs text-slate-500">Based on {stats.resolved} resolved issues.</p>
           </div>
         </div>
 
@@ -205,6 +197,29 @@ const Reports = () => {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Pagination UI */}
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 mt-8">
+              <button 
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 hover:text-white transition-colors"
+              >
+                Previous
+              </button>
+              <span className="text-slate-400 text-sm font-medium bg-slate-900/50 px-4 py-2 rounded-lg border border-slate-800">
+                Page <span className="text-white">{page}</span> of <span className="text-white">{pagination.totalPages}</span>
+              </span>
+              <button 
+                onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                disabled={page === pagination.totalPages}
+                className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 hover:text-white transition-colors"
+              >
+                Next
+              </button>
             </div>
           )}
         </section>
