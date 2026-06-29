@@ -180,9 +180,6 @@ const Home = () => {
             </h1>
             <p className="text-slate-400 text-lg max-w-2xl">Track your reported issues and create new complaints easily.</p>
           </div>
-          <Link to="/heatMap" className="inline-flex items-center justify-center gap-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-600/50 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-lg hover:shadow-blue-500/20 w-full md:w-auto">
-            <i className="fas fa-map-marked-alt text-blue-400"></i> View Heat Map
-          </Link>
         </div>
 
         {/* Action Blocks */}

@@ -14,12 +14,15 @@ const Navbar = () => {
 
   const [isPanelOpen, setIsPanelOpen] = useState(false); 
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const panelRef = useRef(null);
   const profileButtonRef = useRef(null);
   const notificationPanelRef = useRef(null);
   const notificationButtonRef = useRef(null);
+  const menuRef = useRef(null);
+  const menuButtonRef = useRef(null);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications"],
@@ -44,11 +47,13 @@ const Navbar = () => {
   const handleProfileClick = () => {
     setIsPanelOpen(prev => !prev);
     setIsNotificationPanelOpen(false); 
+    setIsMenuOpen(false);
   };
   
   const handleNotificationClick = () => {
     setIsNotificationPanelOpen(prev => !prev);
     setIsPanelOpen(false); 
+    setIsMenuOpen(false);
     if (!isNotificationPanelOpen) {
         setUnreadCount(0); 
     }
@@ -120,12 +125,21 @@ const Navbar = () => {
         notificationButtonRef.current &&
         !notificationButtonRef.current.contains(event.target)
       ) setIsNotificationPanelOpen(false);
+
+      if (
+        isMenuOpen &&
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        menuButtonRef.current &&
+        !menuButtonRef.current.contains(event.target)
+      ) setIsMenuOpen(false);
     };
     
     const handleEscape = (event) => {
         if (event.key === 'Escape') {
             setIsPanelOpen(false);
             setIsNotificationPanelOpen(false);
+            setIsMenuOpen(false);
         }
     };
 
@@ -136,7 +150,7 @@ const Navbar = () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [isPanelOpen, isNotificationPanelOpen]);
+  }, [isPanelOpen, isNotificationPanelOpen, isMenuOpen]);
 
   const getUserAvatar = () => {
     if (user?.displaypic?.url) return <img src={user.displaypic.url} alt="Profile" className="w-9 h-9 rounded-full object-cover border-2 border-blue-500/50" />;
@@ -243,12 +257,101 @@ const Navbar = () => {
     </div>
   );
 
+  const MainMenuPanel = () => (
+    <>
+      <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[60]" onClick={() => setIsMenuOpen(false)}></div>
+      <div ref={menuRef} className="fixed left-0 top-0 h-screen w-[280px] bg-gradient-to-b from-slate-900 to-slate-950 border-r border-blue-900/30 z-[70] shadow-[20px_0_40px_rgba(0,0,0,0.5)] animate-in slide-in-from-left duration-300 flex flex-col">
+          <div className="flex items-center justify-between p-5 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                  <img src={logo} alt="Logo" className="h-8 w-auto" />
+                  <span className="font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 tracking-tight">
+                    Janta Garage
+                  </span>
+              </div>
+              <button onClick={() => setIsMenuOpen(false)} className="w-8 h-8 rounded-full hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 flex items-center justify-center transition-all group">
+                  <i className="fas fa-times group-hover:rotate-90 transition-transform"></i>
+              </button>
+          </div>
+
+          <div className="flex flex-col gap-2 p-4 flex-grow mt-2 overflow-y-auto custom-scrollbar">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 px-2">Main Navigation</p>
+              
+              <Link to="/home" className="flex items-center gap-4 p-3 rounded-xl hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-transparent border border-transparent hover:border-blue-500/20 transition-all group" onClick={() => setIsMenuOpen(false)}>
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                      <i className="fas fa-home text-blue-400"></i>
+                  </div>
+                  <span className="text-sm text-slate-200 font-semibold group-hover:text-blue-300 transition-colors">Home</span>
+              </Link>
+              
+              <Link to="/notifications" className="flex items-center gap-4 p-3 rounded-xl hover:bg-gradient-to-r hover:from-emerald-500/10 hover:to-transparent border border-transparent hover:border-emerald-500/20 transition-all group" onClick={() => setIsMenuOpen(false)}>
+                  <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                      <i className="fas fa-clipboard-check text-emerald-400"></i>
+                  </div>
+                  <span className="text-sm text-slate-200 font-semibold group-hover:text-emerald-300 transition-colors">Verify Reports</span>
+              </Link>
+
+              <div className="h-px bg-white/5 my-2 mx-2"></div>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 px-2">Dashboards</p>
+
+              <Link to="/reports" className="flex items-center gap-4 p-3 rounded-xl hover:bg-gradient-to-r hover:from-cyan-500/10 hover:to-transparent border border-transparent hover:border-cyan-500/20 transition-all group" onClick={() => setIsMenuOpen(false)}>
+                  <div className="w-9 h-9 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:scale-110 transition-transform border border-cyan-500/20 shadow-[0_0_10px_rgba(6,182,212,0.1)]">
+                      <i className="fas fa-list-alt text-cyan-400"></i>
+                  </div>
+                  <span className="text-sm text-slate-200 font-semibold group-hover:text-cyan-300 transition-colors">All Reports</span>
+              </Link>
+              
+              <Link to="/departmentalReports" className="flex items-center gap-4 p-3 rounded-xl hover:bg-gradient-to-r hover:from-rose-500/10 hover:to-transparent border border-transparent hover:border-rose-500/20 transition-all group" onClick={() => setIsMenuOpen(false)}>
+                  <div className="w-9 h-9 rounded-lg bg-rose-500/10 flex items-center justify-center group-hover:scale-110 transition-transform border border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.1)]">
+                      <i className="fas fa-building text-rose-400"></i>
+                  </div>
+                  <span className="text-sm text-slate-200 font-semibold group-hover:text-rose-300 transition-colors">Dept Reports</span>
+              </Link>
+              
+              <Link to="/heatMap" className="flex items-center gap-4 p-3 rounded-xl hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-transparent border border-transparent hover:border-purple-500/20 transition-all group" onClick={() => setIsMenuOpen(false)}>
+                  <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform border border-purple-500/20 shadow-[0_0_10px_rgba(168,85,247,0.1)]">
+                      <i className="fas fa-map-marked-alt text-purple-400"></i>
+                  </div>
+                  <span className="text-sm text-slate-200 font-semibold group-hover:text-purple-300 transition-colors">Heat Map</span>
+              </Link>
+          </div>
+          
+          {user && (
+              <div className="p-5 border-t border-white/5 bg-slate-900/50">
+                  <div className="flex items-center gap-3">
+                      {getUserAvatar()}
+                      <div className="flex flex-col">
+                          <span className="text-sm font-bold text-white line-clamp-1">{user.name || user.userName}</span>
+                          <span className="text-[10px] text-emerald-400 font-semibold uppercase tracking-widest">{user.role}</span>
+                      </div>
+                  </div>
+              </div>
+          )}
+      </div>
+    </>
+  );
+
   return (
     <nav className="sticky top-0 z-40 w-full bg-slate-950/80 backdrop-blur-md border-b border-white/5 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           
           <div className="flex-shrink-0 flex items-center gap-3">
+            <div className="relative">
+              <button
+                ref={menuButtonRef}
+                className={`flex items-center justify-center p-2 rounded-md transition-colors ${isMenuOpen ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                onClick={() => {
+                  setIsMenuOpen(prev => !prev);
+                  setIsPanelOpen(false);
+                  setIsNotificationPanelOpen(false);
+                }}
+                title="Menu"
+              >
+                <i className="fas fa-bars text-lg"></i>
+              </button>
+              {isMenuOpen && <MainMenuPanel />}
+            </div>
+            
             <img src={logo} alt="Logo" className="h-8 w-auto" />
             <span className="font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 tracking-tight hidden sm:block">
               Janta Garage
