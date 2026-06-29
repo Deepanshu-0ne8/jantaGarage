@@ -109,15 +109,9 @@ export const createReport = async (req, res, next) => {
 }
 
 
-export const getAllReports = async (req, res, next) => {
+export const getReportStats = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 20;
-    const skip = (page - 1) * limit;
-
     const totalReports = await Report.countDocuments();
-    const reports = await Report.find().sort({ createdAt: -1 }).skip(skip).limit(limit);
-
     const statsAggr = await Report.aggregate([
       {
         $group: {
@@ -149,9 +143,39 @@ export const getAllReports = async (req, res, next) => {
 
     res.status(200).json({
       status: 'success',
-      data: reports,
       stats: stats,
-      avgResolutionTimeMs: avgMs,
+      avgResolutionTimeMs: avgMs
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllReports = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const skip = (page - 1) * limit;
+
+    const { severity, status, departments } = req.query;
+    const matchStage = {};
+    if (severity) matchStage.severity = severity;
+    if (status) matchStage.status = status;
+    if (departments) {
+      const deptsArray = Array.isArray(departments)
+        ? departments
+        : departments.split(',').filter(Boolean);
+      if (deptsArray.length > 0) {
+        matchStage.departments = { $in: deptsArray };
+      }
+    }
+
+    const totalReports = await Report.countDocuments(matchStage);
+    const reports = await Report.find(matchStage).sort({ createdAt: -1 }).skip(skip).limit(limit);
+
+    res.status(200).json({
+      status: 'success',
+      data: reports,
       pagination: {
         total: totalReports,
         page,

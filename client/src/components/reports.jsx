@@ -7,24 +7,62 @@ import { useQuery } from "@tanstack/react-query";
 
 Modal.setAppElement("#root");
 
+const DEPARTMENTS = [
+  "Water Supply & Sewage Department",
+  "Public Health & Sanitation Department",
+  "Roads & Infrastructure Department",
+  "Street Lighting Department",
+  "Parks & Horticulture Department",
+  "Building & Construction Department",
+  "Drainage Department",
+  "Electricity Department",
+  "Public Works Department",
+  "Traffic & Transportation Department",
+  "Solid Waste Management Department",
+  "Animal Control Department",
+  "Health & Hospital Services",
+  "Fire & Emergency Services",
+  "Environmental Department",
+  "Revenue Department",
+  "Urban Planning & Development Authority",
+  "Public Grievance & Complaint Cell",
+];
+
 const Reports = () => {
   const [selectedReport, setSelectedReport] = useState(null);
 
   const [page, setPage] = useState(1);
+  const [severityFilter, setSeverityFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("");
+  
   const limit = 20;
 
-  const { data = {}, isLoading } = useQuery({
-    queryKey: ["reports", "all", page],
+  const { data: statsData = {} } = useQuery({
+    queryKey: ["reports", "stats"],
     queryFn: async () => {
-      const res = await api.get(`/reports?page=${page}&limit=${limit}`);
+      const res = await api.get("/reports/stats");
+      return res.data;
+    },
+  });
+
+  const { data = {}, isLoading } = useQuery({
+    queryKey: ["reports", "all", page, severityFilter, statusFilter, departmentFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams({ page, limit });
+      if (severityFilter) params.append("severity", severityFilter);
+      if (statusFilter) params.append("status", statusFilter);
+      if (departmentFilter) params.append("departments", departmentFilter);
+      
+      const res = await api.get(`/reports?${params.toString()}`);
       return res.data;
     },
   });
 
   const reports = data.data || [];
-  const stats = data.stats || { total: 0, resolved: 0, pending: 0, inProgress: 0 };
+  const stats = statsData.stats || { total: 0, resolved: 0, pending: 0, inProgress: 0 };
   const pagination = data.pagination || { totalPages: 1, page: 1, total: 0 };
-  const avgResolutionTimeMs = data.avgResolutionTimeMs || 0;
+  const avgResolutionTimeMs = statsData.avgResolutionTimeMs || 0;
 
 
   const pieData = [
@@ -154,10 +192,55 @@ const Reports = () => {
 
         {/* Reports List */}
         <section className="animate-in fade-in slide-in-from-bottom-10 duration-500 delay-300">
-          <div className="flex items-center gap-3 mb-6">
-            <h2 className="text-2xl font-bold text-white">Recent Reports Overview</h2>
-            <div className="h-px bg-slate-800 flex-grow"></div>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <h2 className="text-2xl font-bold text-white whitespace-nowrap">Recent Reports</h2>
+            <div className="flex flex-wrap items-center gap-3">
+              {(severityFilter || statusFilter || departmentFilter) && (
+                <button 
+                  onClick={() => {
+                    setSeverityFilter("");
+                    setStatusFilter("");
+                    setDepartmentFilter("");
+                    setPage(1);
+                  }}
+                  className="bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30 text-sm px-3 py-2 rounded-lg transition-colors flex items-center gap-2 font-medium"
+                >
+                  <i className="fas fa-times"></i> Clear
+                </button>
+              )}
+              <select 
+                value={severityFilter} 
+                onChange={(e) => { setSeverityFilter(e.target.value); setPage(1); }}
+                className="bg-slate-800/80 border border-slate-700 text-slate-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2"
+              >
+                <option value="">All Severities</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
+              <select 
+                value={statusFilter} 
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                className="bg-slate-800/80 border border-slate-700 text-slate-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2"
+              >
+                <option value="">All Statuses</option>
+                <option value="OPEN">Open (Pending)</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="Resolved">Resolved</option>
+              </select>
+              <select 
+                value={departmentFilter} 
+                onChange={(e) => { setDepartmentFilter(e.target.value); setPage(1); }}
+                className="bg-slate-800/80 border border-slate-700 text-slate-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 max-w-[180px] md:max-w-[200px]"
+              >
+                <option value="">All Departments</option>
+                {DEPARTMENTS.map((dept, idx) => (
+                  <option key={idx} value={dept}>{dept}</option>
+                ))}
+              </select>
+            </div>
           </div>
+          <div className="h-px bg-slate-800 flex-grow mb-6"></div>
           
           {isLoading ? (
              <div className="flex justify-center py-12">
@@ -188,10 +271,19 @@ const Reports = () => {
                       </div>
                     )}
                     <h3 className="text-lg font-bold text-white mb-3 pr-8 line-clamp-1 group-hover:text-blue-400 transition-colors">{report.title}</h3>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-3">
                       <span className="text-xs text-slate-400"><i className="far fa-clock"></i> {new Date(report.createdAt).toLocaleDateString()}</span>
                       <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded border ${sClass}`}>
                         {report.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-start">
+                      <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded border ${
+                        report.severity === 'High' ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' :
+                        report.severity === 'Medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
+                        'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                      }`}>
+                        {report.severity || "N/A"} Severity
                       </span>
                     </div>
                   </div>
@@ -260,6 +352,13 @@ const Reports = () => {
                     statusColors[(selectedReport.status || "Pending").toLowerCase().replace(/_/g, "-")] || 'bg-slate-500/10 text-slate-400 border-slate-500/30'
                  }`}>
                    {selectedReport.status}
+                 </span>
+                 <span className={`px-3 py-1 rounded border text-xs font-bold uppercase tracking-wider ${
+                    selectedReport.severity === 'High' ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' :
+                    selectedReport.severity === 'Medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
+                    'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                 }`}>
+                   {selectedReport.severity || "N/A"} Severity
                  </span>
                  {selectedReport.isOverdue && (
                    <span className="px-3 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-rose-400 text-xs font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(244,63,94,0.1)]">
